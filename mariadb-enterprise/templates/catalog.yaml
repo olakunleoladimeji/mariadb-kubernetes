@@ -4,6 +4,14 @@
 {{ tpl (.Files.Get "catalog/mariadb-secret.yaml") . }}
 ---
 {{ tpl (.Files.Get "catalog/standalone.yaml") . }}
+{{ else if eq .Values.mariadb.cluster.topology "columnstore" }}
+{{ tpl (.Files.Get "catalog/mariadb-config.yaml") . }}
+---
+{{ tpl (.Files.Get "catalog/mariadb-secret.yaml") . }}
+---
+{{ tpl (.Files.Get "catalog/columnstore.yaml") . }}
+---
+{{ tpl (.Files.Get "catalog/state-store.yaml") . }}
 {{ else if eq .Values.mariadb.cluster.topology "masterslave" }}
 {{ tpl (.Files.Get "catalog/mariadb-config.yaml") . }}
 ---

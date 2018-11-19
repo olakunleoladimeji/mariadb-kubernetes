@@ -61,9 +61,6 @@ spec:
       {{- if .Values.mariadb.cluster.annotations }}
 {{ toYaml .Values.mariadb.cluster.annotations | indent 8 }}
       {{- end }}
-      {{- if .Values.mariadb.server.annotations }}
-{{ toYaml .Values.mariadb.server.annotations | indent 8 }}
-      {{- end }}
       labels:
         mariadb: {{ .Release.Name }}
         server.mariadb: {{ .Release.Name }}

@@ -11,10 +11,43 @@ metadata:
     id.mariadb: "{{ .Values.mariadb.cluster.id }}"
 data:
   init-configurations.sh: |
+{{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
+{{ tpl (.Files.Get "config/init-configuration-columnstore-mn.sh") . | indent 4 }}
+{{- else }}
 {{ tpl (.Files.Get "config/init-configurations.sh") . | indent 4 }}
+{{- end }}
 
+{{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
+  init_um_master.sh: |
+{{ tpl (.Files.Get "config/columnstore/init_um_master.sh") . | indent 4 }}
+  init_um_slave.sh: |
+{{ tpl (.Files.Get "config/columnstore/init_um_slave.sh") . | indent 4 }}
+  init_um_master_pi.sh: |
+{{ tpl (.Files.Get "config/columnstore/init_um_master.sh") . | indent 4 }}
+  init_um_slave_pi.sh: |
+{{ tpl (.Files.Get "config/columnstore/init_um_slave.sh") . | indent 4 }}
+  init_pm.sh: |
+{{ tpl (.Files.Get "config/columnstore/init_pm.sh") . | indent 4 }}
+  init_pm_postconf.sh: |
+{{ tpl (.Files.Get "config/columnstore/init_pm_postconf.sh") . | indent 4 }}
+{{- if .Values.mariadb.columnstore.test}}
+  test_cs.sh: |
+{{ tpl (.Files.Get "tests/cs/test_cs.sh") . | indent 4 }}
+  initdb.sql: |
+{{ tpl (.Files.Get "tests/cs/initdb.sql") . | indent 4 }}
+{{- end }}
+{{- if .Values.mariadb.columnstore.sandbox}}
+  02_load_bookstore_data.sh: |
+{{ tpl (.Files.Get "config/columnstore/multi_node_um1/02_load_bookstore_data.sh") . | indent 4 }}
+{{- end }}
+{{- end }}
   start-mariadb-instance.sh: |
-{{ tpl (.Files.Get "config/start-mariadb-instance.sh") . | indent 4 }}
+{{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
+{{ tpl (.Files.Get "config/start-mariadb-instance-columnstore-mn.sh") . | indent 4 }}
+{{- else }}
+{{ tpl (.Files.Get "config/init-start-mariadb-instance.sh") . | indent 4 }}
+{{- end }}
+
 
   users.sql: |
 {{ tpl (.Files.Get "config/users.sql") . | indent 4 }}
