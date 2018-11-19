@@ -26,3 +26,5 @@ Temporary Items
 
 # IDE files
 .vscode
+_tools
+*.tar

@@ -14,11 +14,12 @@ if [[ ! "$RESTORE_FROM_FOLDER" == "" ]]; then
     cp -a /backup-storage/$RESTORE_FROM_FOLDER/* /backup_local
     chown -R mysql:mysql /backup_local
 fi
+{{- end }}
 
-if [[ "$CLUSTER_TOPOLOGY" == "standalone" ]] || [[ "$CLUSTER_TOPOLOGY" == "masterslave" ]]; then
+{{- if or (eq .Values.mariadb.cluster.topology "standalone") (eq .Values.mariadb.cluster.topology "masterslave") }}
     # fire up the instance
     /usr/local/bin/docker-entrypoint.sh mysqld --log-bin=mariadb-bin --binlog-format=ROW --server-id=$((3000 + $server_id)) --log-slave-updates=1 --gtid-strict-mode=1 --innodb-flush-method=fsync
-elif [[ "$CLUSTER_TOPOLOGY" == "galera" ]]; then
+{{- else if eq .Values.mariadb.cluster.topology "galera" }}
     MASTER_HOST=$(cat /mnt/config-map/master)
 
     cp /mnt/config-map/galera.cnf /etc/mysql/mariadb.conf.d/galera.cnf
@@ -29,4 +30,4 @@ elif [[ "$CLUSTER_TOPOLOGY" == "galera" ]]; then
     else
         /usr/local/bin/docker-entrypoint.sh mysqld --log-bin=mariadb-bin --binlog-format=ROW --server-id=$((3000 + $server_id)) --log-slave-updates=1 --gtid-strict-mode=1 --innodb-flush-method=fsync
     fi
-fi
+{{- end }}
