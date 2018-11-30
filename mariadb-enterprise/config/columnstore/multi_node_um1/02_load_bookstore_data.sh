@@ -20,7 +20,7 @@ sed -i 's/%DB%/bookstore/g'  /tmp/bookstore-csv/01_load_ax_init.sql
 
 "${mysql[@]}" < /tmp/bookstore-csv/01_load_ax_init.sql
 echo "Loading bookstore data ..."
-
+start=`date +%s`
 for i in *.mcs.csv.gz; do
     table=$(echo $i | cut -f 1 -d '.')
     zcat  $table.mcs.csv.gz | /usr/local/mariadb/columnstore/bin/cpimport -s ',' -E "'" bookstore $table
@@ -33,6 +33,10 @@ for i in *.inno.csv.gz; do
     "${mysql[@]}" < /tmp/bookstore-csv/01_load_ax_init.sql bookstore -e "load data local infile '$table.inno.csv' into table bookstore.$table fields terminated by ',' enclosed by '''';"
     rm -f $table.inno.csv.gz
 done
+end=`date +%s`
+runtime=$((end-start))
+echo "Load time: "$runtime"sec"
+
 # now load the covers table which is innodb so use load data local infile
 cat readme.md
 cd $currentDir

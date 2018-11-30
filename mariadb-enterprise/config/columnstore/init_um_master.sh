@@ -100,8 +100,8 @@ echo "Initializing container at $(date) - waiting for ProcMon to start"
     wait_for_procmon
 export MARIADB_CS_DEBUG 
 
-echo "Waiting for columnstore to start to run post install files"
-echo "----------------------------------------------------------"
+echo "Waiting for columnstore to start before running post install files"
+echo "-------------------------------------------------------------------"
 #----------------------------------------------------------------------------
 {{- if .Values.mariadb.columnstore.retries}}
 MAX_TRIES={{ .Values.mariadb.columnstore.retries }}
