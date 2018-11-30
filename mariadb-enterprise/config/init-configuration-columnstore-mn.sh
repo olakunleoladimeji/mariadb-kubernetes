@@ -43,8 +43,6 @@ fi
 
 expand_templates /mnt/config-template/start-mariadb-instance.sh >> /mnt/config-map/start-mariadb-instance.sh
 
-#what else can it be in this file
-echo $CLUSTER_TOPOLOGY
 if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
     echo "Init Columnstore"
     echo "$MARIADB_CS_NODE:$MARIADB_CS_MASTER"

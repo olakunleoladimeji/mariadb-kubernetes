@@ -36,14 +36,22 @@ function ping_hosts() {
     RET_CD=0
     for i in `seq 0 $(( UM_COUNT-1 ))`
     do
-        ping -c 1 $UM_HOST$i.$CS_SERVICE 2>&1 >/dev/null
+        if [ ! -z $MARIADB_CS_DEBUG ]; then
+            ping -c 1 $UM_HOST$i.$CS_SERVICE 2>&1 >/dev/null
+        else
+            ping -c 1 $UM_HOST$i.$CS_SERVICE >/dev/null 2>&1 >/dev/null
+        fi
         if [[ $? -gt 0 ]]; then
             RET_CD=$(( RET_CD+1 ))
         fi
     done
     for i in `seq 0 $(( PM_COUNT-1 ))`
     do
-        ping -c 1 $PM_HOST$i.$CS_SERVICE 2>&1 >/dev/null
+        if [ ! -z $MARIADB_CS_DEBUG ]; then
+            ping -c 1 $PM_HOST$i.$CS_SERVICE 2>&1 >/dev/null
+        else
+            ping -c 1 $PM_HOST$i.$CS_SERVICE >/dev/null 2>&1 >/dev/null
+        fi
         if [[ $? -gt 0 ]]; then
             RET_CD=$(( RET_CD+1 ))
         fi

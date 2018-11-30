@@ -1,0 +1,1918 @@
+[debug] Created tunnel using local port: '60697'
+
+[debug] SERVER: "127.0.0.1:60697"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /Users/ivanzlatoustov/Documents/Projects/mariadb-kubernetes/mariadb-enterprise
+
+NAME:   boza-1
+REVISION: 1
+RELEASED: Fri Nov 30 21:17:19 2018
+CHART: mariadb-enterprise-0.1.2
+USER-SUPPLIED VALUES:
+ID: 1
+mariadb:
+  cluster:
+    topology: columnstore
+
+COMPUTED VALUES:
+ID: 1
+mariadb:
+  backup:
+    annotations: null
+    image: mariadb/server:10.3
+    labels: null
+    release:
+      id: 0
+      name: null
+      type: masterslave
+    volume:
+      claimName: null
+      subdirPattern: null
+  cluster:
+    annotations: null
+    id: null
+    labels: null
+    topology: columnstore
+  columnstore:
+    image: nastybuff/cs:latest
+    pm:
+      moduleName: mdb-cs-pm-module
+      postConfigInput: 2\n1\nn\nn\ncolumnstore-1\n1\n
+      replicas: 3
+    retries: 60
+    sandbox: true
+    test: true
+    um:
+      moduleName: mdb-cs-um-module
+      replicas: 1
+  debug: null
+  maxscale:
+    annotations: null
+    image: mariadb/maxscale:2.2
+    labels: null
+    ports:
+      readonly: 4008
+      readwrite: 4006
+    replicas: 2
+    resources:
+      limits:
+        cpu: null
+        memory: null
+      requests:
+        cpu: null
+        memory: null
+  server:
+    annotations: null
+    backup:
+      claimName: null
+      restoreFrom: null
+    image: mariadb/server:10.3
+    labels: null
+    port: 3306
+    replicas: 3
+    resources:
+      limits:
+        cpu: null
+        memory: null
+      requests:
+        cpu: null
+        memory: null
+    storage:
+      class: null
+      size: 256Mi
+    users:
+      admin:
+        password: 5LVTpbGE2cGFtw69
+        username: admin
+      replication:
+        password: 5LVTpbGE2cGFtw69
+        username: repl
+  statestore:
+    image: mariadb/statestore:0.0.3
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: mariadb-enterprise/templates/catalog.yaml
+# Copyright (C) 2018, MariaDB Corporation
+#
+# Stores auto-generated cluster credentials as a secret
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: boza-1-mariadb-secret
+  labels:
+    mariadb: boza-1
+type: Opaque
+data:
+  admin-username: YWRtaW4=
+  admin-password: NUxWVHBiR0UyY0dGdHc2OQ==
+  repl-username: cmVwbA==
+  repl-password: NUxWVHBiR0UyY0dGdHc2OQ==
+---
+# Source: mariadb-enterprise/templates/catalog.yaml
+# Copyright (C) 2018, MariaDB Corporation
+#
+# Stores cluste-wide initialization scripts in a config map
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: boza-1-mariadb-config
+  labels:
+    mariadb: boza-1
+    id.mariadb: ""
+data:
+  init-configurations.sh: |
+    #!/bin/sh
+    # Copyright (C) 2018, MariaDB Corporation
+    #
+    # This script customizes templates based on the parameters passed to a command-line tool
+    # the path to the target directory needs to be passed as first argument
+    
+    
+    
+    function expand_templates() {
+        sed -e "s/<<MASTER_HOST>>/$MASTER_HOST/g" \
+            -e "s/<<ADMIN_USERNAME>>/$ADMIN_USER/g" \
+            -e "s/<<ADMIN_PASSWORD>>/$ADMIN_PWD/g" \
+            -e "s/<<REPLICATION_USERNAME>>/$REPL_USER/g" \
+            -e "s/<<REPLICATION_PASSWORD>>/$REPL_PWD/g" \
+            -e "s/<<RELEASE_NAME>>/$RELEASE_NAME/g" \
+            -e "s/<<CLUSTER_ID>>/$CLUSTER_ID/g" \
+            $1
+    }
+    
+    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    
+    # APPLICATION=$(hostname -f | cut -d '.' -f 2 | cut -d '-' -f 1)
+    # ENVIRONMENT=$(hostname -f | cut -d '.' -f 2 | cut -d '-' -f 2)
+    ADMIN_USER=$(cat /mnt/secrets/admin-username)
+    ADMIN_PWD=$(cat /mnt/secrets/admin-password)
+    REPL_USER=$(cat /mnt/secrets/repl-username)
+    REPL_PWD=$(cat /mnt/secrets/repl-password)
+    DB_HOST="$(hostname -f | cut -d '.' -f 1).$(hostname -f | cut -d '.' -f 2)"
+    UM_COUNT=1
+    PM_COUNT=3
+    
+    if [[ "$MARIADB_CS_NODE" == "UM" && -f "/mnt/config-map/master" ]]; then
+        export MARIADB_CS_MASTER="$(cat /mnt/config-map/master)"
+    fi
+    
+    expand_templates /mnt/config-template/start-mariadb-instance.sh >> /mnt/config-map/start-mariadb-instance.sh
+    
+    if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
+        echo "Init Columnstore"
+        echo "$MARIADB_CS_NODE:$MARIADB_CS_MASTER"
+        echo "Columnstore Init"
+        echo "-----------------"
+    
+        if [[ "$MARIADB_CS_NODE" == "UM" && -f "/mnt/config-map/master" ]]; then
+            export MARIADB_CS_MASTER="$(cat /mnt/config-map/master)"
+        fi
+    
+        #Get last digit of the hostname
+        MY_HOSTNAME=$(hostname)
+        SPLIT_HOST=(${MY_HOSTNAME//-/ }); 
+        CONT_INDEX=${SPLIT_HOST[(${#SPLIT_HOST[@]}-1)]}
+    
+        if [[ "$MARIADB_CS_NODE" == "UM" ]]; then
+            if [[ "$CONT_INDEX" -eq 0 ]]; then
+                #First PM
+                echo "UM Master"
+                expand_templates /mnt/config-template/init_um_master.sh >> /mnt/config-map/cs_init.sh
+                expand_templates /mnt/config-template/init_um_master_pi.sh >> /mnt/config-map/cs_post_init.sh
+                expand_templates /mnt/config-template/test_cs.sh >> /mnt/config-map/test_cs.sh
+                expand_templates /mnt/config-template/initdb.sql >> /mnt/config-map/initdb.sql
+                cp /mnt/config-template/02_load_bookstore_data.sh /docker-entrypoint-initdb.d/02_load_bookstore_data.sh
+                #expand_templates /mnt/config-template/custom.sh >> /docker-entrypoint-initdb.d/custom.sh
+            else
+                #Any PM but first
+                echo "UM Slave"
+                expand_templates /mnt/config-template/init_um_slave.sh >> /mnt/config-map/cs_init.sh
+                expand_templates /mnt/config-template/init_um_slave_pi.sh >> /mnt/config-map/cs_post_init.sh
+            fi
+        elif [[ "$MARIADB_CS_NODE" == "PM" ]]; then
+            #use the last PM to start initialisation
+            #if [[ "$CONT_INDEX" -eq $(( PM_COUNT-1 )) ]]; then     
+            if [[ "$CONT_INDEX" -eq 0 ]]; then     
+                #First PM
+                echo "PM1"
+                expand_templates /mnt/config-template/init_pm_postconf.sh >> /mnt/config-map/cs_init.sh
+            else
+                #Any PM but first
+                echo "PM"
+                expand_templates /mnt/config-template/init_pm.sh >> /mnt/config-map/cs_init.sh
+            fi
+        fi
+    fi
+  init_um_master.sh: |
+    #!/bin/sh
+    # Copyright (C) 2018, MariaDB Corporation
+    
+    
+    MASTER_HOST="<<MASTER_HOST>>"
+    ADMIN_USERNAME="<<ADMIN_USERNAME>>"
+    ADMIN_PASSWORD="<<ADMIN_PASSWORD>>"
+    REPLICATION_USERNAME="<<REPLICATION_USERNAME>>"
+    REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
+    RELEASE_NAME="<<RELEASE_NAME>>"
+    CLUSTER_ID="<<CLUSTER_ID>>"
+    MCSDIR=/usr/local/mariadb/columnstore
+    export MCSDIR
+    # file used to track / record initialization and prevent subsequent rerun
+    FLAG="$MCSDIR/etc/container-initialized"
+    # directory which can contain sql, sql.gz, and sh scripts that will be run
+    # after successful initialization.
+    INITDIR=/docker-entrypoint-initdb.d
+    POST_REP_CMD=''
+    MCSDIR=/usr/local/mariadb/columnstore
+    mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
+    
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        #set +x
+        echo '------------------------'
+        echo 'Starting UM Master      '
+        echo '------------------------'
+        #set -x
+    fi
+    
+    # usage: file_env VAR [DEFAULT]
+    #    ie: file_env 'XYZ_DB_PASSWORD' 'example'
+    # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
+    #  "$XYZ_DB_PASSWORD" from a file, especially for Docker's secrets feature)
+    file_env() {
+        local var="$1"
+        local fileVar="${var}_FILE"
+        local def="${2:-}"
+        if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
+            echo >&2 "error: both $var and $fileVar are set (but are exclusive)"
+            exit 1
+        fi
+        local val="$def"
+        if [ "${!var:-}" ]; then
+            val="${!var}"
+        elif [ "${!fileVar:-}" ]; then
+            val="$(< "${!fileVar}")"
+        fi
+        export "$var"="$val"
+        unset "$fileVar"
+    }
+    
+    # wait for the ProcMon process to start
+    wait_for_procmon()
+    {
+        ps -e | grep ProcMon
+        while [ 1 -eq $? ]; do
+            sleep 1
+            ps -e | grep ProcMon
+        done
+    }
+    
+    execute_sql()
+    {
+            IFS=';' read -r -a cmds <<< "$1"
+            for cmd in "${cmds[@]}"
+                do
+                    if [[ -n "${cmd// /}" ]]; then 
+                        if [ ! -z $MARIADB_CS_DEBUG ]; then
+                            echo "> $cmd;"
+                        fi
+                        "${mysql[@]}" -e "$cmd;"
+                    fi
+                done
+    }
+    # hack to ensure server-id is set to unique value per vm because my.cnf is
+    # not in a good location for a volume
+    SERVER_ID=$(hostname -i | cut -d "." -f 4)
+    SERVER_SUBNET=$(hostname -i | cut -d "." -f 1-3 -s)
+    sed -i "s/server-id =.*/server-id = $SERVER_ID/" /usr/local/mariadb/columnstore/mysql/my.cnf
+    
+    # hack to make master-dist rsync.sh script do nothing as it fails otherwise
+    # in non distributed on windows and mac (occasionally on ubuntu).
+    # Replicating the db directories is a no-op here anyway
+    mv /usr/local/mariadb/columnstore/bin/rsync.sh /usr/local/mariadb/columnstore/bin/rsync.sh.bkp
+    touch /usr/local/mariadb/columnstore/bin/rsync.sh
+    chmod a+x /usr/local/mariadb/columnstore/bin/rsync.sh
+    
+    # hack to specify user env var as this is sometimes relied on to detect
+    # root vs non root install
+    export USER=root
+    
+    # Initialize CS only once.
+    if [ -e $FLAG ]; then
+        echo "Container already initialized at $(date)"
+        exit 0
+    fi
+    
+    echo "Initializing container at $(date) - waiting for ProcMon to start"
+        wait_for_procmon
+    export MARIADB_CS_DEBUG 
+    
+    echo "Waiting for columnstore to start to run post install files"
+    echo "----------------------------------------------------------"
+    #----------------------------------------------------------------------------
+    MAX_TRIES=60
+    ATTEMPT=1
+    # wait for mcsadmin getSystemStatus to show active
+    STATUS=$($MCSDIR/bin/mcsadmin getSystemStatus | tail -n +9 | grep System | grep -v "System and Module statuses")
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        echo "wait_for_columnstore_active($ATTEMPT/$MAX_TRIES): getSystemStatus: $STATUS"
+    fi
+    echo "$STATUS" | grep -q 'System.*ACTIVE'
+    while [ 1 -eq $? ] && [ $ATTEMPT -le $MAX_TRIES ]; do
+        sleep 5
+        ATTEMPT=$(($ATTEMPT+1))
+        STATUS=$($MCSDIR/bin/mcsadmin getSystemStatus | tail -n +9 | grep System | grep -v "System and Module statuses")
+        if [ ! -z $MARIADB_CS_DEBUG ]; then
+            echo "wait_for_columnstore_active($ATTEMPT/$MAX_TRIES): getSystemStatus: $STATUS"
+        fi
+        echo "$STATUS" | grep -q 'System.*ACTIVE'
+    done
+    
+    if [ $ATTEMPT -ge $MAX_TRIES ]; then
+        echo "ERROR: ColumnStore did not start after $MAX_TRIES attempts"
+        exit 1
+    fi
+    
+    # during install the system status can be active but the cs system catalog
+    # is still being created, so wait for this to complete. This will first
+    # check that mysqld is running and this is a UM. If this is run from UM2
+    # or greater it will succeed if the standard error preventing DDL from
+    # running is reported.
+    MYSQLDS_RUNNING=$(ps -ef | grep -v grep | grep mysqld | wc -l)
+    if [ $MYSQLDS_RUNNING -gt 0 ]; then
+        echo "Waiting for system catalog to be fully created"
+        ATTEMPT=1
+        TEST_TABLE="columnstore_info.mcs_wait_test_$RANDOM"
+        mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
+        # if [ ! -z "$ROOT_PASSWORD" ]; then
+        #   #mysql+=( -p"${ROOT_PASSWORD}" )
+        #   export MYSQL_PWD=${ROOT_PASSWORD}
+        # fi
+    
+        STATUS=$("${mysql[@]}" -e "create table $TEST_TABLE(i tinyint) engine=columnstore;" 2>&1)
+        while [ 1 -eq $? ] && [ $ATTEMPT -le $MAX_TRIES ]; do
+            if [ ! -z $MARIADB_CS_DEBUG ]; then
+                echo "wait_for_columnstore_active($ATTEMPT/$MAX_TRIES): create table test error: $STATUS"
+            fi
+            echo "$STATUS" | grep -q "DML and DDL statements for Columnstore tables can only be run from the replication master."
+            if [ 0 -eq $? ]; then
+                echo "Assuming system ready due to expected non UM1 DDL error: $STATUS"
+                exit 0
+            fi
+            sleep 2
+            ATTEMPT=$(($ATTEMPT+1))
+            STATUS=$("${mysql[@]}" -e "create table $TEST_TABLE(i tinyint) engine=columnstore;" 2>&1)
+        done
+        "${mysql[@]}" -e "drop table if exists $TEST_TABLE;"
+        if [ $ATTEMPT -ge $MAX_TRIES ]; then
+            echo "ERROR: ColumnStore not ready for use after $MAX_TRIES attempts, last status: $STATUS"
+            exit 1
+        else
+            echo "System ready"
+        fi
+    fi
+    
+    #----------------------------------------------------------------------------
+    
+    # sh /usr/sbin/wait_for_columnstore_active 2>&1
+    # if [ 1 -eq $? ]; then
+    #     # exit now if columnstore did not start
+    #     echo "ERROR: ColumnStore did not start so custom install files not run."
+    #     exit 1
+    # fi
+    
+    
+    
+    MYSQLDS_RUNNING=$(ps -ef | grep -v grep | grep mysqld | wc -l)
+    
+    if [ $MYSQLDS_RUNNING -gt 0 ]; then
+        if [ ! -z "$MARIADB_RANDOM_ROOT_PASSWORD" ]; then
+            export MARIADB_ROOT_PASSWORD="$(pwgen -1 32)"
+            GENERATED_ROOT=$MARIADB_ROOT_PASSWORD
+        fi
+    
+        if [ ! -z $MARIADB_CS_DEBUG ]; then
+            "${mysql[@]}" -e "SET GLOBAL log_output = 'TABLE';"
+            "${mysql[@]}" -e "SET GLOBAL general_log = 'ON';"
+        fi
+        
+        POST_REP_CMD_NO_ROOT+="SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${MARIADB_ROOT_PASSWORD}'); "           
+        POST_REP_CMD+="GRANT ALL ON *.* TO 'root'@'localhost' WITH GRANT OPTION ; "
+        #TODO: Create root 
+        # create root user, default listens from anywhere
+        if [[ -z "$MARIADB_ROOT_HOST" ]] ; then 
+            MARIADB_ROOT_HOST='%'
+        fi
+        # if [ ! -z "$MARIADB_ROOT_HOST" -a "$MARIADB_ROOT_HOST" != 'localhost' ]; then
+        #     POST_REP_CMD+="CREATE USER IF NOT EXISTS 'root'@'${MARIADB_ROOT_HOST}' IDENTIFIED BY '${MARIADB_ROOT_PASSWORD}' ; "
+        #     POST_REP_CMD+="GRANT ALL ON *.* TO 'root'@'${MARIADB_ROOT_HOST}' WITH GRANT OPTION ; "
+        # fi
+        # POST_REP_CMD+="DROP DATABASE IF EXISTS test ; "
+        # POST_REP_CMD+="FLUSH PRIVILEGES ; "
+        
+        
+        # TODO: PArk those for now 
+        # Create custom database if specified. CS_DATABASE for backward compat
+        # MARIADB_DATABASE="${MARIADB_DATABASE:-$CS_DATABASE}"
+        # if [ ! -z "$MARIADB_DATABASE" ]; then
+        #         POST_REP_CMD+="CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\`; "
+        # fi
+    
+        # if [ "$MARIADB_USER" -a "$MARIADB_PASSWORD" ]; then
+        #     POST_REP_CMD+="CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ; "
+        #     POST_REP_CMD+="GRANT CREATE TEMPORARY TABLES ON infinidb_vtable.* to '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ; "
+        #     if [ "$MARIADB_DATABASE" ]; then
+        #         POST_REP_CMD+="GRANT ALL ON \`$MARIADB_DATABASE\`.* TO '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ; "
+        #     fi
+        # fi
+    fi
+    #TODO: Call /usr/sbin/cs_post_init.sh here
+    
+    CUSTOM_INSTALL_FILES=$(ls $INITDIR/*.{sql,sql.gz,sh} -la 2>/dev/null | wc -l)
+    echo "$CUSTOM_INSTALL_FILES custom files"
+    export WRK_DIR=`pwd`
+    # check for any custom post install sql or shell scripts to run in INITDIR
+    if [ 0 -eq $CUSTOM_INSTALL_FILES ]; then
+        echo "No custom post install files to run at $(date)"
+    else
+        echo "Executing custom post install files at $(date)"
+        cd /docker-entrypoint-initdb.d/
+        for f in $(ls $INITDIR/); do
+            if [[ $f == *.sql ]];then
+                echo "Run $f at $(date)"
+                "${mysql[@]}" -vvv < $f 2>&1
+                if [ 1 -eq $? ]; then
+                    echo "Script $f failed, aborting setup"
+                    exit 1
+                fi
+            elif [[ $f == *.sql.gz ]];then
+                echo "Run $f at $(date)"
+                zcat $f | "${mysql[@]}" -vvv  2>&1
+                if [ 1 -eq $? ]; then
+                    echo "Script $f failed, aborting setup"
+                    exit 1
+                fi
+            elif [[ $f == *.sh ]]; then
+                chmod 755 $f
+                echo "Run $f at $(date)"
+                if [ -z $MARIADB_CS_DEBUG ]; then
+                    /bin/sh $f 2>&1
+                else
+                    /bin/sh -x $f 2>&1
+                fi
+                if [ 1 -eq $? ]; then
+                    echo "Script $f failed, aborting setup"
+                    exit 1
+                fi
+            fi;
+        done;
+        #TODO: revise this after everything else is working
+        # #Tighten the security
+        # users_to_be_dropped=$("${mysql[@]}" -r -s -N -e "SELECT CONCAT(\"DROP USER IF EXISTS '\",User,\"'@'\", Host,\"';\") FROM mysql.user WHERE (Password='' AND User NOT IN ('mysql.sys', 'mysqlxsys','root')) OR (User='root' AND Password='' AND NOT (Host LIKE '$SERVER_SUBNET.%' OR  Host='localhost'));"| tr '\n' ' ')
+        # execute_sql "$users_to_be_dropped"
+    fi
+    cd $WRK_DIR
+    pwd
+    
+    #TODO: Revise this after everything else is working
+    # execute_sql "$POST_REP_CMD_NO_ROOT"
+    # if [ ! -z "$MARIADB_ROOT_PASSWORD" ]; then
+    #     mysql+=( -p"${MARIADB_ROOT_PASSWORD}" )
+    # fi
+    # execute_sql "$POST_REP_CMD"
+    
+    unset $MARIADB_ROOT_PASSWORD
+    if [ ! -z $GENERATED_ROOT ]; then
+        echo "Generated MariaDB root password is: $GENERATED_ROOT"
+    fi
+    echo "Container initialization complete at $(date)"
+    
+    touch $FLAG
+    unset MYSQL_PWD
+    if [  -f "/mnt/config-map/test_cs.sh" ]; then
+      cd /mnt/config-map/
+      bash ./test_cs.sh
+    fi
+    
+    exit 0;
+    
+  init_um_slave.sh: |
+    #!/bin/sh
+    # Copyright (C) 2018, MariaDB Corporation
+    
+    # file used to track / record initialization and prevent subsequent rerun
+    MCSDIR=/usr/local/mariadb/columnstore
+    FLAG="$MCSDIR/etc/container-initialized"
+    # directory which can contain sql, sql.gz, and sh scripts that will be run
+    # after successful initialization.
+    INITDIR=/docker-entrypoint-initdb.d
+    POST_REP_CMD=''
+    
+    mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
+    
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        #set +x
+        echo '------------------------'
+        echo 'Starting UM Slave       '
+        echo '------------------------'
+        #set -x
+    fi
+    
+    # usage: file_env VAR [DEFAULT]
+    #    ie: file_env 'XYZ_DB_PASSWORD' 'example'
+    # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
+    #  "$XYZ_DB_PASSWORD" from a file, especially for Docker's secrets feature)
+    file_env() {
+        local var="$1"
+        local fileVar="${var}_FILE"
+        local def="${2:-}"
+        if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
+            echo >&2 "error: both $var and $fileVar are set (but are exclusive)"
+            exit 1
+        fi
+        local val="$def"
+        if [ "${!var:-}" ]; then
+            val="${!var}"
+        elif [ "${!fileVar:-}" ]; then
+            val="$(< "${!fileVar}")"
+        fi
+        export "$var"="$val"
+        unset "$fileVar"
+    }
+    
+    # wait for the ProcMon process to start
+    wait_for_procmon()
+    {
+        ps -e | grep ProcMon
+        while [ 1 -eq $? ]; do
+            sleep 1
+            ps -e | grep ProcMon
+        done
+    }
+    
+    execute_sql()
+    {
+            IFS=';' read -r -a cmds <<< "$1"
+            for cmd in "${cmds[@]}"
+                do
+                    if [[ -n "${cmd// /}" ]]; then 
+                        if [ ! -z $MARIADB_CS_DEBUG ]; then
+                            echo "> $cmd;"
+                        fi
+                        "${mysql[@]}" -e "$cmd;"
+                    fi
+                done
+    }
+    # hack to ensure server-id is set to unique value per vm because my.cnf is
+    # not in a good location for a volume
+    SERVER_ID=$(hostname -i | cut -d "." -f 4)
+    SERVER_SUBNET=$(hostname -i | cut -d "." -f 1-3 -s)
+    sed -i "s/server-id =.*/server-id = $SERVER_ID/" /usr/local/mariadb/columnstore/mysql/my.cnf
+    
+    # hack to make master-dist rsync.sh script do nothing as it fails otherwise
+    # in non distributed on windows and mac (occasionally on ubuntu).
+    # Replicating the db directories is a no-op here anyway
+    mv /usr/local/mariadb/columnstore/bin/rsync.sh /usr/local/mariadb/columnstore/bin/rsync.sh.bkp
+    touch /usr/local/mariadb/columnstore/bin/rsync.sh
+    chmod a+x /usr/local/mariadb/columnstore/bin/rsync.sh
+    
+    # hack to specify user env var as this is sometimes relied on to detect
+    # root vs non root install
+    export USER=root
+    
+    # Initialize CS only once.
+    if [ -e $FLAG ]; then
+        echo "Container already initialized at $(date)"
+        exit 0
+    fi
+    #TODO: Call /usr/sbin/cs_post_init.sh here
+    unset $MARIADB_ROOT_PASSWORD
+    if [ ! -z $GENERATED_ROOT ]; then
+        echo "Generated MariaDB root password is: $GENERATED_ROOT"
+    fi
+    echo "Container initialization complete at $(date)"
+    touch $FLAG
+    
+    exit 0;
+    
+  init_um_master_pi.sh: |
+    #!/bin/sh
+    # Copyright (C) 2018, MariaDB Corporation
+    
+    
+    MASTER_HOST="<<MASTER_HOST>>"
+    ADMIN_USERNAME="<<ADMIN_USERNAME>>"
+    ADMIN_PASSWORD="<<ADMIN_PASSWORD>>"
+    REPLICATION_USERNAME="<<REPLICATION_USERNAME>>"
+    REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
+    RELEASE_NAME="<<RELEASE_NAME>>"
+    CLUSTER_ID="<<CLUSTER_ID>>"
+    MCSDIR=/usr/local/mariadb/columnstore
+    export MCSDIR
+    # file used to track / record initialization and prevent subsequent rerun
+    FLAG="$MCSDIR/etc/container-initialized"
+    # directory which can contain sql, sql.gz, and sh scripts that will be run
+    # after successful initialization.
+    INITDIR=/docker-entrypoint-initdb.d
+    POST_REP_CMD=''
+    MCSDIR=/usr/local/mariadb/columnstore
+    mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
+    
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        #set +x
+        echo '------------------------'
+        echo 'Starting UM Master      '
+        echo '------------------------'
+        #set -x
+    fi
+    
+    # usage: file_env VAR [DEFAULT]
+    #    ie: file_env 'XYZ_DB_PASSWORD' 'example'
+    # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
+    #  "$XYZ_DB_PASSWORD" from a file, especially for Docker's secrets feature)
+    file_env() {
+        local var="$1"
+        local fileVar="${var}_FILE"
+        local def="${2:-}"
+        if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
+            echo >&2 "error: both $var and $fileVar are set (but are exclusive)"
+            exit 1
+        fi
+        local val="$def"
+        if [ "${!var:-}" ]; then
+            val="${!var}"
+        elif [ "${!fileVar:-}" ]; then
+            val="$(< "${!fileVar}")"
+        fi
+        export "$var"="$val"
+        unset "$fileVar"
+    }
+    
+    # wait for the ProcMon process to start
+    wait_for_procmon()
+    {
+        ps -e | grep ProcMon
+        while [ 1 -eq $? ]; do
+            sleep 1
+            ps -e | grep ProcMon
+        done
+    }
+    
+    execute_sql()
+    {
+            IFS=';' read -r -a cmds <<< "$1"
+            for cmd in "${cmds[@]}"
+                do
+                    if [[ -n "${cmd// /}" ]]; then 
+                        if [ ! -z $MARIADB_CS_DEBUG ]; then
+                            echo "> $cmd;"
+                        fi
+                        "${mysql[@]}" -e "$cmd;"
+                    fi
+                done
+    }
+    # hack to ensure server-id is set to unique value per vm because my.cnf is
+    # not in a good location for a volume
+    SERVER_ID=$(hostname -i | cut -d "." -f 4)
+    SERVER_SUBNET=$(hostname -i | cut -d "." -f 1-3 -s)
+    sed -i "s/server-id =.*/server-id = $SERVER_ID/" /usr/local/mariadb/columnstore/mysql/my.cnf
+    
+    # hack to make master-dist rsync.sh script do nothing as it fails otherwise
+    # in non distributed on windows and mac (occasionally on ubuntu).
+    # Replicating the db directories is a no-op here anyway
+    mv /usr/local/mariadb/columnstore/bin/rsync.sh /usr/local/mariadb/columnstore/bin/rsync.sh.bkp
+    touch /usr/local/mariadb/columnstore/bin/rsync.sh
+    chmod a+x /usr/local/mariadb/columnstore/bin/rsync.sh
+    
+    # hack to specify user env var as this is sometimes relied on to detect
+    # root vs non root install
+    export USER=root
+    
+    # Initialize CS only once.
+    if [ -e $FLAG ]; then
+        echo "Container already initialized at $(date)"
+        exit 0
+    fi
+    
+    echo "Initializing container at $(date) - waiting for ProcMon to start"
+        wait_for_procmon
+    export MARIADB_CS_DEBUG 
+    
+    echo "Waiting for columnstore to start to run post install files"
+    echo "----------------------------------------------------------"
+    #----------------------------------------------------------------------------
+    MAX_TRIES=60
+    ATTEMPT=1
+    # wait for mcsadmin getSystemStatus to show active
+    STATUS=$($MCSDIR/bin/mcsadmin getSystemStatus | tail -n +9 | grep System | grep -v "System and Module statuses")
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        echo "wait_for_columnstore_active($ATTEMPT/$MAX_TRIES): getSystemStatus: $STATUS"
+    fi
+    echo "$STATUS" | grep -q 'System.*ACTIVE'
+    while [ 1 -eq $? ] && [ $ATTEMPT -le $MAX_TRIES ]; do
+        sleep 5
+        ATTEMPT=$(($ATTEMPT+1))
+        STATUS=$($MCSDIR/bin/mcsadmin getSystemStatus | tail -n +9 | grep System | grep -v "System and Module statuses")
+        if [ ! -z $MARIADB_CS_DEBUG ]; then
+            echo "wait_for_columnstore_active($ATTEMPT/$MAX_TRIES): getSystemStatus: $STATUS"
+        fi
+        echo "$STATUS" | grep -q 'System.*ACTIVE'
+    done
+    
+    if [ $ATTEMPT -ge $MAX_TRIES ]; then
+        echo "ERROR: ColumnStore did not start after $MAX_TRIES attempts"
+        exit 1
+    fi
+    
+    # during install the system status can be active but the cs system catalog
+    # is still being created, so wait for this to complete. This will first
+    # check that mysqld is running and this is a UM. If this is run from UM2
+    # or greater it will succeed if the standard error preventing DDL from
+    # running is reported.
+    MYSQLDS_RUNNING=$(ps -ef | grep -v grep | grep mysqld | wc -l)
+    if [ $MYSQLDS_RUNNING -gt 0 ]; then
+        echo "Waiting for system catalog to be fully created"
+        ATTEMPT=1
+        TEST_TABLE="columnstore_info.mcs_wait_test_$RANDOM"
+        mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
+        # if [ ! -z "$ROOT_PASSWORD" ]; then
+        #   #mysql+=( -p"${ROOT_PASSWORD}" )
+        #   export MYSQL_PWD=${ROOT_PASSWORD}
+        # fi
+    
+        STATUS=$("${mysql[@]}" -e "create table $TEST_TABLE(i tinyint) engine=columnstore;" 2>&1)
+        while [ 1 -eq $? ] && [ $ATTEMPT -le $MAX_TRIES ]; do
+            if [ ! -z $MARIADB_CS_DEBUG ]; then
+                echo "wait_for_columnstore_active($ATTEMPT/$MAX_TRIES): create table test error: $STATUS"
+            fi
+            echo "$STATUS" | grep -q "DML and DDL statements for Columnstore tables can only be run from the replication master."
+            if [ 0 -eq $? ]; then
+                echo "Assuming system ready due to expected non UM1 DDL error: $STATUS"
+                exit 0
+            fi
+            sleep 2
+            ATTEMPT=$(($ATTEMPT+1))
+            STATUS=$("${mysql[@]}" -e "create table $TEST_TABLE(i tinyint) engine=columnstore;" 2>&1)
+        done
+        "${mysql[@]}" -e "drop table if exists $TEST_TABLE;"
+        if [ $ATTEMPT -ge $MAX_TRIES ]; then
+            echo "ERROR: ColumnStore not ready for use after $MAX_TRIES attempts, last status: $STATUS"
+            exit 1
+        else
+            echo "System ready"
+        fi
+    fi
+    
+    #----------------------------------------------------------------------------
+    
+    # sh /usr/sbin/wait_for_columnstore_active 2>&1
+    # if [ 1 -eq $? ]; then
+    #     # exit now if columnstore did not start
+    #     echo "ERROR: ColumnStore did not start so custom install files not run."
+    #     exit 1
+    # fi
+    
+    
+    
+    MYSQLDS_RUNNING=$(ps -ef | grep -v grep | grep mysqld | wc -l)
+    
+    if [ $MYSQLDS_RUNNING -gt 0 ]; then
+        if [ ! -z "$MARIADB_RANDOM_ROOT_PASSWORD" ]; then
+            export MARIADB_ROOT_PASSWORD="$(pwgen -1 32)"
+            GENERATED_ROOT=$MARIADB_ROOT_PASSWORD
+        fi
+    
+        if [ ! -z $MARIADB_CS_DEBUG ]; then
+            "${mysql[@]}" -e "SET GLOBAL log_output = 'TABLE';"
+            "${mysql[@]}" -e "SET GLOBAL general_log = 'ON';"
+        fi
+        
+        POST_REP_CMD_NO_ROOT+="SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${MARIADB_ROOT_PASSWORD}'); "           
+        POST_REP_CMD+="GRANT ALL ON *.* TO 'root'@'localhost' WITH GRANT OPTION ; "
+        #TODO: Create root 
+        # create root user, default listens from anywhere
+        if [[ -z "$MARIADB_ROOT_HOST" ]] ; then 
+            MARIADB_ROOT_HOST='%'
+        fi
+        # if [ ! -z "$MARIADB_ROOT_HOST" -a "$MARIADB_ROOT_HOST" != 'localhost' ]; then
+        #     POST_REP_CMD+="CREATE USER IF NOT EXISTS 'root'@'${MARIADB_ROOT_HOST}' IDENTIFIED BY '${MARIADB_ROOT_PASSWORD}' ; "
+        #     POST_REP_CMD+="GRANT ALL ON *.* TO 'root'@'${MARIADB_ROOT_HOST}' WITH GRANT OPTION ; "
+        # fi
+        # POST_REP_CMD+="DROP DATABASE IF EXISTS test ; "
+        # POST_REP_CMD+="FLUSH PRIVILEGES ; "
+        
+        
+        # TODO: PArk those for now 
+        # Create custom database if specified. CS_DATABASE for backward compat
+        # MARIADB_DATABASE="${MARIADB_DATABASE:-$CS_DATABASE}"
+        # if [ ! -z "$MARIADB_DATABASE" ]; then
+        #         POST_REP_CMD+="CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\`; "
+        # fi
+    
+        # if [ "$MARIADB_USER" -a "$MARIADB_PASSWORD" ]; then
+        #     POST_REP_CMD+="CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ; "
+        #     POST_REP_CMD+="GRANT CREATE TEMPORARY TABLES ON infinidb_vtable.* to '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ; "
+        #     if [ "$MARIADB_DATABASE" ]; then
+        #         POST_REP_CMD+="GRANT ALL ON \`$MARIADB_DATABASE\`.* TO '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD' ; "
+        #     fi
+        # fi
+    fi
+    #TODO: Call /usr/sbin/cs_post_init.sh here
+    
+    CUSTOM_INSTALL_FILES=$(ls $INITDIR/*.{sql,sql.gz,sh} -la 2>/dev/null | wc -l)
+    echo "$CUSTOM_INSTALL_FILES custom files"
+    export WRK_DIR=`pwd`
+    # check for any custom post install sql or shell scripts to run in INITDIR
+    if [ 0 -eq $CUSTOM_INSTALL_FILES ]; then
+        echo "No custom post install files to run at $(date)"
+    else
+        echo "Executing custom post install files at $(date)"
+        cd /docker-entrypoint-initdb.d/
+        for f in $(ls $INITDIR/); do
+            if [[ $f == *.sql ]];then
+                echo "Run $f at $(date)"
+                "${mysql[@]}" -vvv < $f 2>&1
+                if [ 1 -eq $? ]; then
+                    echo "Script $f failed, aborting setup"
+                    exit 1
+                fi
+            elif [[ $f == *.sql.gz ]];then
+                echo "Run $f at $(date)"
+                zcat $f | "${mysql[@]}" -vvv  2>&1
+                if [ 1 -eq $? ]; then
+                    echo "Script $f failed, aborting setup"
+                    exit 1
+                fi
+            elif [[ $f == *.sh ]]; then
+                chmod 755 $f
+                echo "Run $f at $(date)"
+                if [ -z $MARIADB_CS_DEBUG ]; then
+                    /bin/sh $f 2>&1
+                else
+                    /bin/sh -x $f 2>&1
+                fi
+                if [ 1 -eq $? ]; then
+                    echo "Script $f failed, aborting setup"
+                    exit 1
+                fi
+            fi;
+        done;
+        #TODO: revise this after everything else is working
+        # #Tighten the security
+        # users_to_be_dropped=$("${mysql[@]}" -r -s -N -e "SELECT CONCAT(\"DROP USER IF EXISTS '\",User,\"'@'\", Host,\"';\") FROM mysql.user WHERE (Password='' AND User NOT IN ('mysql.sys', 'mysqlxsys','root')) OR (User='root' AND Password='' AND NOT (Host LIKE '$SERVER_SUBNET.%' OR  Host='localhost'));"| tr '\n' ' ')
+        # execute_sql "$users_to_be_dropped"
+    fi
+    cd $WRK_DIR
+    pwd
+    
+    #TODO: Revise this after everything else is working
+    # execute_sql "$POST_REP_CMD_NO_ROOT"
+    # if [ ! -z "$MARIADB_ROOT_PASSWORD" ]; then
+    #     mysql+=( -p"${MARIADB_ROOT_PASSWORD}" )
+    # fi
+    # execute_sql "$POST_REP_CMD"
+    
+    unset $MARIADB_ROOT_PASSWORD
+    if [ ! -z $GENERATED_ROOT ]; then
+        echo "Generated MariaDB root password is: $GENERATED_ROOT"
+    fi
+    echo "Container initialization complete at $(date)"
+    
+    touch $FLAG
+    unset MYSQL_PWD
+    if [  -f "/mnt/config-map/test_cs.sh" ]; then
+      cd /mnt/config-map/
+      bash ./test_cs.sh
+    fi
+    
+    exit 0;
+    
+  init_um_slave_pi.sh: |
+    #!/bin/sh
+    # Copyright (C) 2018, MariaDB Corporation
+    
+    # file used to track / record initialization and prevent subsequent rerun
+    MCSDIR=/usr/local/mariadb/columnstore
+    FLAG="$MCSDIR/etc/container-initialized"
+    # directory which can contain sql, sql.gz, and sh scripts that will be run
+    # after successful initialization.
+    INITDIR=/docker-entrypoint-initdb.d
+    POST_REP_CMD=''
+    
+    mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
+    
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        #set +x
+        echo '------------------------'
+        echo 'Starting UM Slave       '
+        echo '------------------------'
+        #set -x
+    fi
+    
+    # usage: file_env VAR [DEFAULT]
+    #    ie: file_env 'XYZ_DB_PASSWORD' 'example'
+    # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
+    #  "$XYZ_DB_PASSWORD" from a file, especially for Docker's secrets feature)
+    file_env() {
+        local var="$1"
+        local fileVar="${var}_FILE"
+        local def="${2:-}"
+        if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
+            echo >&2 "error: both $var and $fileVar are set (but are exclusive)"
+            exit 1
+        fi
+        local val="$def"
+        if [ "${!var:-}" ]; then
+            val="${!var}"
+        elif [ "${!fileVar:-}" ]; then
+            val="$(< "${!fileVar}")"
+        fi
+        export "$var"="$val"
+        unset "$fileVar"
+    }
+    
+    # wait for the ProcMon process to start
+    wait_for_procmon()
+    {
+        ps -e | grep ProcMon
+        while [ 1 -eq $? ]; do
+            sleep 1
+            ps -e | grep ProcMon
+        done
+    }
+    
+    execute_sql()
+    {
+            IFS=';' read -r -a cmds <<< "$1"
+            for cmd in "${cmds[@]}"
+                do
+                    if [[ -n "${cmd// /}" ]]; then 
+                        if [ ! -z $MARIADB_CS_DEBUG ]; then
+                            echo "> $cmd;"
+                        fi
+                        "${mysql[@]}" -e "$cmd;"
+                    fi
+                done
+    }
+    # hack to ensure server-id is set to unique value per vm because my.cnf is
+    # not in a good location for a volume
+    SERVER_ID=$(hostname -i | cut -d "." -f 4)
+    SERVER_SUBNET=$(hostname -i | cut -d "." -f 1-3 -s)
+    sed -i "s/server-id =.*/server-id = $SERVER_ID/" /usr/local/mariadb/columnstore/mysql/my.cnf
+    
+    # hack to make master-dist rsync.sh script do nothing as it fails otherwise
+    # in non distributed on windows and mac (occasionally on ubuntu).
+    # Replicating the db directories is a no-op here anyway
+    mv /usr/local/mariadb/columnstore/bin/rsync.sh /usr/local/mariadb/columnstore/bin/rsync.sh.bkp
+    touch /usr/local/mariadb/columnstore/bin/rsync.sh
+    chmod a+x /usr/local/mariadb/columnstore/bin/rsync.sh
+    
+    # hack to specify user env var as this is sometimes relied on to detect
+    # root vs non root install
+    export USER=root
+    
+    # Initialize CS only once.
+    if [ -e $FLAG ]; then
+        echo "Container already initialized at $(date)"
+        exit 0
+    fi
+    #TODO: Call /usr/sbin/cs_post_init.sh here
+    unset $MARIADB_ROOT_PASSWORD
+    if [ ! -z $GENERATED_ROOT ]; then
+        echo "Generated MariaDB root password is: $GENERATED_ROOT"
+    fi
+    echo "Container initialization complete at $(date)"
+    touch $FLAG
+    
+    exit 0;
+    
+  init_pm.sh: |
+    #!/bin/sh
+    # Copyright (C) 2018, MariaDB Corporation
+    #
+    
+    MASTER_HOST="<<MASTER_HOST>>"
+    ADMIN_USERNAME="<<ADMIN_USERNAME>>"
+    ADMIN_PASSWORD="<<ADMIN_PASSWORD>>"
+    REPLICATION_USERNAME="<<REPLICATION_USERNAME>>"
+    REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
+    RELEASE_NAME="<<RELEASE_NAME>>"
+    CLUSTER_ID="<<CLUSTER_ID>>"
+    
+    MCSDIR=/usr/local/mariadb/columnstore
+    # file used to track / record initialization and prevent subsequent rerun
+    FLAG="$MCSDIR/etc/container-initialized"
+    # directory which can contain sql, sql.gz, and sh scripts that will be run
+    # after successful initialization.
+    INITDIR=/docker-entrypoint-initdb.d
+    POST_REP_CMD=''
+    
+    mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
+    
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        #set +x
+        echo "------------------"
+        echo "Starting PM Module"
+        echo "------------------"
+        #set -x
+    fi
+    
+    # wait for the ProcMon process to start
+    wait_for_procmon()
+    {
+        ps -e | grep ProcMon
+        while [ 1 -eq $? ]; do
+            sleep 1
+            ps -e | grep ProcMon
+        done
+    }
+    
+    # hack to ensure server-id is set to unique value per vm because my.cnf is
+    # not in a good location for a volume
+    SERVER_ID=$(hostname -i | cut -d "." -f 4)
+    SERVER_SUBNET=$(hostname -i | cut -d "." -f 1-3 -s)
+    sed -i "s/server-id =.*/server-id = $SERVER_ID/" /usr/local/mariadb/columnstore/mysql/my.cnf
+    
+    # hack to make master-dist rsync.sh script do nothing as it fails otherwise
+    # in non distributed on windows and mac (occasionally on ubuntu).
+    # Replicating the db directories is a no-op here anyway
+    mv /usr/local/mariadb/columnstore/bin/rsync.sh /usr/local/mariadb/columnstore/bin/rsync.sh.bkp
+    touch /usr/local/mariadb/columnstore/bin/rsync.sh
+    chmod a+x /usr/local/mariadb/columnstore/bin/rsync.sh
+    
+    # hack to specify user env var as this is sometimes relied on to detect
+    # root vs non root install
+    export USER=root
+    
+    # Initialize CS only once.
+    if [ -e $FLAG ]; then
+        echo "Container already initialized at $(date)"
+        exit 0
+    fi
+    
+    # wait for ProcMon to startup
+    echo "Initializing container at $(date) - waiting for ProcMon to start"
+    wait_for_procmon
+    
+    echo "Container initialization complete at $(date)"
+    touch $FLAG
+    
+    exit 0;
+  init_pm_postconf.sh: |
+    #!/bin/sh
+    # Copyright (C) 2018, MariaDB Corporation
+    #
+    # Environment variables supported:
+    
+    MASTER_HOST="<<MASTER_HOST>>"
+    ADMIN_USERNAME="<<ADMIN_USERNAME>>"
+    ADMIN_PASSWORD="<<ADMIN_PASSWORD>>"
+    REPLICATION_USERNAME="<<REPLICATION_USERNAME>>"
+    REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
+    RELEASE_NAME="<<RELEASE_NAME>>"
+    CLUSTER_ID="<<CLUSTER_ID>>"
+    
+    MCSDIR=/usr/local/mariadb/columnstore
+    # file used to track / record initialization and prevent subsequent rerun
+    FLAG="$MCSDIR/etc/container-initialized"
+    # directory which can contain sql, sql.gz, and sh scripts that will be run
+    # after successful initialization.
+    INITDIR=/docker-entrypoint-initdb.d
+    POST_REP_CMD=''
+    
+    mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
+    
+    # wait for the ProcMon process to start
+    wait_for_procmon()
+    {
+        ps -e | grep ProcMon
+        while [ 1 -eq $? ]; do
+            sleep 1
+            ps -e | grep ProcMon
+        done
+    }
+    
+    # hack to ensure server-id is set to unique value per vm because my.cnf is
+    # not in a good location for a volume
+    SERVER_ID=$(hostname -i | cut -d "." -f 4)
+    SERVER_SUBNET=$(hostname -i | cut -d "." -f 1-3 -s)
+    sed -i "s/server-id =.*/server-id = $SERVER_ID/" /usr/local/mariadb/columnstore/mysql/my.cnf
+    
+    # hack to make master-dist rsync.sh script do nothing as it fails otherwise
+    # in non distributed on windows and mac (occasionally on ubuntu).
+    # Replicating the db directories is a no-op here anyway
+    mv /usr/local/mariadb/columnstore/bin/rsync.sh /usr/local/mariadb/columnstore/bin/rsync.sh.bkp
+    touch /usr/local/mariadb/columnstore/bin/rsync.sh
+    chmod a+x /usr/local/mariadb/columnstore/bin/rsync.sh
+    
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        #set +x
+        echo "----------------------"
+        echo "Starting PM postConfig"
+        echo "----------------------"
+        #set -x
+    fi
+    
+    # hack to specify user env var as this is sometimes relied on to detect
+    # root vs non root install
+    export USER=root
+    
+    # Initialize CS only once.
+    if [ -e $FLAG ]; then
+        echo "Container already initialized at $(date)"
+        exit 0
+    fi
+    
+    # wait for ProcMon to startup
+    echo "Initializing container at $(date) - waiting for ProcMon to start"
+    wait_for_procmon
+    
+    echo "Stopping columnstore service to run postConfigure"
+    /usr/sbin/sv stop columnstore
+    
+    echo -e "$MARIADB_CS_POSTCFG_INPUT" | $MCSDIR/bin/postConfigure -n
+    
+    echo "Container initialization complete at $(date)"
+    touch $FLAG
+    
+    exit 0;
+  test_cs.sh: |
+    #!/bin/bash
+    export PASS_MSG="\033[0;32m✔ Pass \033[0m"
+    export FAIL_MSG="\033[0;31m✘ Fail \033[0m"
+    start_tst()
+    {
+        declare -a tsts=("${!1}")
+        spacer=''
+        echo ""
+        if [ ! -z "$2" ]; then
+            for ((i=0;i<=$2;i++));do spacer="$spacer "; done;
+        fi
+        for (( i=0; i<${#tsts[@]}; i=$i+2 ));
+        do
+            #echo ">>>>"${tsts[$i]}"<<<<"
+            test=${tsts[$i]}
+            test_name=${tsts[$i+1]}
+            echo -ne "$spacer"[$(($i/2+1))/$((${#tsts[@]}/2))] ${test_name} ""
+            
+            if eval "$test"; then
+                echo -ne "$PASS_MSG\r\n"
+            else
+                echo -ne "$FAIL_MSG\r\n"
+            fi
+        done
+    }
+    
+    export start_test
+    
+    
+    repeat_tst() {
+        test="$1"
+        # echo ""
+        # echo ">$1<"
+        # echo ">>$2<<"
+        if [ ! -z "$2" ]; then
+            iterations="$2"
+            strlen=${#iterations}
+            for (( k=1; k<$((iterations+1)); k++ ));
+            do            
+                for (( j=0; j<$((strlen-${#k})); j++ )); do echo -en '0' ; done;
+                echo -en "$k"
+                for (( j=0; j<$((strlen)); j++ )); do echo -en '\b' ; done;
+                if ! eval "$test"; then
+                    return 1
+                fi
+            done;
+    
+        fi
+    }
+    
+    export repeat_tst
+    
+    export MCSDIR=/usr/local/mariadb/columnstore
+    
+    # export MARIADB_ROOT_PASSWORD='this is an example test password'
+    # export MARIADB_USER='0123456789012345'
+    # export MARIADB_PASSWORD='my cool mariadb password'
+    export MARIADB_DATABASE='my cool mariadb database'
+    sed -i s/\#\#test_db_name\#\#/"$MARIADB_DATABASE"/g ./initdb.sql
+    echo "Running tests"
+    mysql() {
+        res=$($MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot --silent  "$1" < /dev/stdin)
+        if [ $? -eq 0 ]; then
+            echo $res
+        else
+            echo "<<failure>>"
+        fi
+    }
+    
+    $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot < initdb.sql #-v
+    tests+=( 'repeat_tst "[ $( echo SELECT 1 | mysql "$MARIADB_DATABASE" ) = 1 ]" 200' "Testing 20 times SELECT 1. Expected: 1" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM test' | mysql "$MARIADB_DATABASE")" = 1 ]" "Testing SELECT COUNT(*) FROM test. Expected: 1" )
+    tests+=( "[ "$(echo 'SELECT c FROM test' | mysql "$MARIADB_DATABASE")" == "goodbye!" ]" "Testing SELECT c FROM test. Expected: goodbye!" )
+    tests+=( "[ "$(wc -l /var/log/mariadb/columnstore/info.log | cut -d ' ' -f 1)" -gt 0 ]" "Testing log at /var/log/mariadb/columnstore/info.log. Expected: some rows" )
+    tests+=( 'repeat_tst "[ "$(echo SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1 | mysql bookstore)" == "1.49" ]" 5' "Testing SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1;. Expected: 1.49" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM addresses' | mysql bookstore)" = 2666749 ]" "Testing SELECT COUNT(*) FROM addresses. Expected: 2666749" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM books' | mysql bookstore)" = 5001 ]" "Testing SELECT COUNT(*) FROM books. Expected: 5001" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM cards' | mysql bookstore)" = 1604661 ]" "Testing SELECT COUNT(*) FROM cards. Expected: 1604661" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM covers' | mysql bookstore)" = 20 ]" "Testing SELECT COUNT(*) FROM covers. Expected: 20" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM customers' | mysql bookstore)" = 2005397 ]" "Testing SELECT COUNT(*) FROM customers. Expected: 2005397" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM emails' | mysql bookstore)" = 2566571 ]" "Testing SELECT COUNT(*) FROM emails. Expected: 2566571" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM loyaltypoints' | mysql bookstore)" = 923008 ]" "Testing SELECT COUNT(*) FROM loyaltypoints. Expected: 923008" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM maritalstatuses' | mysql bookstore)" = 5 ]" "Testing SELECT COUNT(*) FROM maritalstatuses. Expected: 5" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM phones' | mysql bookstore)" = 2427033 ]" "Testing SELECT COUNT(*) FROM phones. Expected: 2427033" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM transactions' | mysql bookstore)" = 11279171 ]" "Testing SELECT COUNT(*) FROM transactions. Expected: 11279171" )
+    tests+=( "[ "$(echo 'SELECT COUNT(*) FROM transactiontypes' | mysql bookstore)" = 3 ]" "Testing SELECT COUNT(*) FROM transactiontypes. Expected: 3" )
+    tests+=( 'repeat_tst "[ "$(echo SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1 | mysql bookstore)" == "1.49" ]" 5' "Testing (5 iterations) SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1;. Expected: 1.49" )
+    tests+=( "[ "$(echo 'SELECT sum(price) FROM transactions' | mysql bookstore)" == "115003016.41" ]" "Testing SELECT sum(price) FROM transactions. Expected: 115003016.41" )
+    tests+=( "[ "$(echo 'SELECT DISTINCT count(customer_id) from transactions' | mysql bookstore)" == "11279171" ]" "Testing SELECT DISTINCT count(customer_id) from transactions. Expected: 11279171" )
+    tests+=( "[ "$(echo 'SET @@max_length_for_sort_data = 501;SELECT p.p FROM (SELECT bookname,category, sum(cover_price) p from books group by bookname,category) p ORDER BY category LIMIT 1' | mysql bookstore)" == "<<failure>>" ]" "Testing SELECT p.p FROM (SELECT bookname,category, sum(cover_price) p from books group by bookname,category) p ORDER BY category LIMIT 1;. Expected: 3.49" )
+    tests+=( "[ "$(echo 'SET @@max_length_for_sort_data = 5001;SELECT p.p FROM (SELECT bookname,category, sum(cover_price) p from books group by bookname,category) p ORDER BY category LIMIT 1' | mysql bookstore)" == "3.49" ]" "Testing SELECT p.p FROM (SELECT bookname,category, sum(cover_price) p from books group by bookname,category) p ORDER BY category LIMIT 1;. Expected: 3.49" )
+    start_tst tests[@] 3
+    
+    
+    
+    # SELECT s.a,s.b FROM (
+    # SELECT "addresses" a, COUNT(*) b FROM addresses
+    # UNION ALL
+    # SELECT "books" a, COUNT(*) b FROM books
+    # UNION ALL
+    # SELECT "cards" a, COUNT(*) b FROM cards
+    # UNION ALL
+    # SELECT "covers" a, COUNT(*) b FROM covers
+    # UNION ALL
+    # SELECT "customers" a, COUNT(*) b FROM customers
+    # UNION ALL
+    # SELECT "emails" a, COUNT(*) b FROM emails
+    # UNION ALL
+    # SELECT "loyaltypoints" a, COUNT(*) b FROM loyaltypoints
+    # UNION ALL
+    # SELECT "maritalstatuses" a, COUNT(*) b FROM maritalstatuses
+    # UNION ALL
+    # SELECT "phones" a, COUNT(*) b FROM phones
+    # UNION ALL
+    # SELECT "transactions" a, COUNT(*) b FROM transactions
+    # UNION ALL
+    # SELECT "transactiontypes" a, COUNT(*) b FROM transactiontypes
+    # ) s order by s.a; 
+    
+  initdb.sql: |
+    DROP DATABASE IF EXISTS `##test_db_name##`;
+    CREATE DATABASE IF NOT EXISTS `##test_db_name##`;
+    USE `##test_db_name##`;
+    CREATE TABLE test (a INT, b INT, c VARCHAR(255));
+    INSERT INTO test VALUES (1, 2, 'hello');
+    INSERT INTO test VALUES (2, 3, 'goodbye!');
+    DELETE FROM test WHERE a = 1;
+    
+  02_load_bookstore_data.sh: |
+    #!/bin/sh
+    mkdir -p /tmp/bookstore-csv
+    MCSDIR=/usr/local/mariadb/columnstore
+    mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
+    
+    if [ ! -f "/docker-entrypoint-initdb.d/sandboxdata.tar" ]; then
+      echo "Getting the bookstore sandbox archive ..."
+      curl https://downloads.mariadb.com/sample-data/books5001.tar --output /docker-entrypoint-initdb.d/sandboxdata.tar
+    fi
+    
+    echo "Extracting bookstore files ..."
+    tar -xf /docker-entrypoint-initdb.d/sandboxdata.tar --directory /tmp/bookstore-csv
+    
+    # gunzip cover.csv.gz as will use LDI for innodb table later and simplifies
+    # for loop below.
+    currentDir=$(pwd)
+    cd /tmp/bookstore-csv
+    echo "Creating tables ..."
+    sed -i 's/%DB%/bookstore/g'  /tmp/bookstore-csv/01_load_ax_init.sql
+    
+    "${mysql[@]}" < /tmp/bookstore-csv/01_load_ax_init.sql
+    echo "Loading bookstore data ..."
+    
+    for i in *.mcs.csv.gz; do
+        table=$(echo $i | cut -f 1 -d '.')
+        zcat  $table.mcs.csv.gz | /usr/local/mariadb/columnstore/bin/cpimport -s ',' -E "'" bookstore $table
+        rm -f $table.mcs.csv.gz
+    done
+    
+    for i in *.inno.csv.gz; do
+        gunzip $i
+        table=$(echo $i | cut -f 1 -d '.')
+        "${mysql[@]}" < /tmp/bookstore-csv/01_load_ax_init.sql bookstore -e "load data local infile '$table.inno.csv' into table bookstore.$table fields terminated by ',' enclosed by '''';"
+        rm -f $table.inno.csv.gz
+    done
+    # now load the covers table which is innodb so use load data local infile
+    cat readme.md
+    cd $currentDir
+    rm -rf /tmp/bookstore-csv
+    
+  start-mariadb-instance.sh: |
+    #!/usr/bin/bash
+    # Copyright (C) 2018, MariaDB Corporation
+    #
+    # Starts and initializes a MariaDB columnstore instance
+    #Not expanded
+    MASTER_HOST="<<MASTER_HOST>>"
+    ADMIN_USERNAME="<<ADMIN_USERNAME>>"
+    ADMIN_PASSWORD="<<ADMIN_PASSWORD>>"
+    REPLICATION_USERNAME="<<REPLICATION_USERNAME>>"
+    REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
+    RELEASE_NAME="<<RELEASE_NAME>>"
+    CLUSTER_ID="<<CLUSTER_ID>>"
+    
+    #TODO: Container Install 
+    #TODO: Move those to the container image
+        #yum install -y bind-utils
+    #TODO: End Container Install
+    
+    UM_COUNT=1
+    PM_COUNT=3
+    function ping_hosts() { 
+        CS_SERVICE="boza-1-mdb-cs-service"
+        UM_HOST="boza-1-mdb-cs-um-module-"
+        PM_HOST="boza-1-mdb-cs-pm-module-"
+        RET_CD=0
+        for i in `seq 0 $(( UM_COUNT-1 ))`
+        do
+            if [ ! -z $MARIADB_CS_DEBUG ]; then
+                ping -c 1 $UM_HOST$i.$CS_SERVICE 2>&1 >/dev/null
+            else
+                ping -c 1 $UM_HOST$i.$CS_SERVICE >/dev/null 2>&1 >/dev/null
+            fi
+            if [[ $? -gt 0 ]]; then
+                RET_CD=$(( RET_CD+1 ))
+            fi
+        done
+        for i in `seq 0 $(( PM_COUNT-1 ))`
+        do
+            if [ ! -z $MARIADB_CS_DEBUG ]; then
+                ping -c 1 $PM_HOST$i.$CS_SERVICE 2>&1 >/dev/null
+            else
+                ping -c 1 $PM_HOST$i.$CS_SERVICE >/dev/null 2>&1 >/dev/null
+            fi
+            if [[ $? -gt 0 ]]; then
+                RET_CD=$(( RET_CD+1 ))
+            fi
+        done
+        return "$RET_CD"
+    }
+    
+    function wait_ping_hosts() {
+        ping_hosts
+        hosts_down=$?
+        while [[ $hosts_down -gt 0 ]]; do
+            sleep 5
+            ping_hosts
+            hosts_down=$?
+        done
+    }
+    
+    function build_post_config_input() { 
+        PREFIX="2\n1\nn\nn\ncolumnstore-1\n1\n"
+        CS_SERVICE="boza-1-mdb-cs-service"
+        UM_HOST="boza-1-mdb-cs-um-module-"
+        PM_HOST="boza-1-mdb-cs-pm-module-"
+        MODULES=""
+        MODULES="$MODULES$UM_COUNT\n"
+        for i in `seq 0 $(( UM_COUNT-1 ))`
+        do
+            IP=$(get_IP_from_ping $UM_HOST$i.$CS_SERVICE)
+            MODULES="$MODULES$UM_HOST$i.$CS_SERVICE\n$IP\n\n"
+        done
+        MODULES="$MODULES$PM_COUNT\n"
+        for i in `seq 0 $(( PM_COUNT-1 ))`
+        do
+            IP=$(get_IP_from_ping $PM_HOST$i.$CS_SERVICE)
+            MODULES="$MODULES$PM_HOST$i.$CS_SERVICE\n$IP\n\n$(( i+1 ))\n"
+        done
+        echo "$PREFIX$MODULES"
+    }
+    
+    function get_IP_from_ping() {
+        ATTEMPT=1
+        RET_IP=$(ping -q -c 1 -t 5 "$1" | grep PING | sed -e "s/).*//" | sed -e "s/.*(//")
+        while [ -z "$RET_IP" ] && [ $ATTEMPT -le 5 ]; do
+            PING_DEBUG="$PING_DEBUG\n-- Ping failed to resolve $ATTEMPT host ("$1")! --"
+            sleep 2
+            ATTEMPT=$(($ATTEMPT+1))
+            RET_IP=$(ping -q -c 1 -t 5 "$1" | grep PING | sed -e "s/).*//" | sed -e "s/.*(//")
+            #RET_IP=$( host $IP | sed -e "s/.*\ //" )
+        done
+        echo $RET_IP
+    }
+    
+    
+    # get server id from hostname, it will have the format <something>-<id>
+    [[ $(hostname) =~ -([0-9]+)$ ]] || exit 1
+    server_id=${BASH_REMATCH[1]}
+    
+    # load backup
+    if [[ ! "$BACKUP_CLAIM_NAME" == "" ]]; then
+        if [[ "$MASTER_HOST" == "localhost" ]]; then
+            chown -R mysql:mysql /backup/$RESTORE_FROM_FOLDER
+        fi
+    fi
+    
+    
+    if [[ "$MARIADB_CS_NODE" == "UM" && -f "/mnt/config-map/master" ]]; then
+        export MARIADB_CS_MASTER="$(cat /mnt/config-map/master)"
+    fi
+    
+    MY_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+    #what else can it be in this file
+    echo $CLUSTER_TOPOLOGY
+    if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
+        echo "Init Columnstore"
+        echo "$MARIADB_CS_NODE:$MY_IP"
+        echo "Master:$MARIADB_CS_MASTER"
+        if [[ "$MARIADB_CS_NODE" == "UM" && -f "/mnt/config-map/master" ]]; then
+            export MARIADB_CS_MASTER="$(cat /mnt/config-map/master)"
+        fi
+    
+        #Get last digit of the hostname
+        MY_HOSTNAME=$(hostname)
+        SPLIT_HOST=(${MY_HOSTNAME//-/ }); 
+        CONT_INDEX=${SPLIT_HOST[(${#SPLIT_HOST[@]}-1)]}
+        
+        if [[ "$MARIADB_CS_NODE" == "UM" ]]; then
+            if [[ "$CONT_INDEX" -eq 0 ]]; then
+                wait_ping_hosts
+                #Init master
+                echo "UM Master"
+                sh /mnt/config-map/cs_init.sh 2>&1 &
+                exec /usr/sbin/runsvdir-start
+            else
+                #Init slave
+                echo "UM Slave"
+                sh /mnt/config-map/cs_init.sh 2>&1 &
+                exec /usr/sbin/runsvdir-start
+            fi
+        elif [[ "$MARIADB_CS_NODE" == "PM" ]]; then
+            #if [[ "$CONT_INDEX" -eq $(( PM_COUNT-1 )) ]]; then
+            if [[ "$CONT_INDEX" -eq 0 ]]; then
+                #Last PM
+                echo "Start post config"
+                wait_ping_hosts
+                MARIADB_CS_POSTCFG_INPUT=$(build_post_config_input)
+                sh /mnt/config-map/cs_init.sh 2>&1 &
+                exec /usr/sbin/runsvdir-start
+            else
+                #Any other PM
+                echo "Start PM config"
+                sh /mnt/config-map/cs_init.sh 2>&1 &
+                exec /usr/sbin/runsvdir-start
+            fi
+        fi
+    fi
+    echo "Defaulted to sleep something is wrong"
+    sleep 3600
+
+
+  users.sql: |
+    
+    CREATE DATABASE test;
+    
+    CREATE USER '<<REPLICATION_USERNAME>>'@'127.0.0.1' IDENTIFIED BY '<<REPLICATION_PASSWORD>>';
+    CREATE USER '<<REPLICATION_USERNAME>>'@'%' IDENTIFIED BY '<<REPLICATION_PASSWORD>>';
+    GRANT ALL ON *.* TO '<<REPLICATION_USERNAME>>'@'127.0.0.1' WITH GRANT OPTION;
+    GRANT ALL ON *.* TO '<<REPLICATION_USERNAME>>'@'%' WITH GRANT OPTION;
+    
+    CREATE USER '<<ADMIN_USERNAME>>'@'127.0.0.1' IDENTIFIED BY '<<ADMIN_PASSWORD>>';
+    CREATE USER '<<ADMIN_USERNAME>>'@'%' IDENTIFIED BY '<<ADMIN_PASSWORD>>';
+    GRANT ALL ON *.* TO '<<ADMIN_USERNAME>>'@'127.0.0.1' WITH GRANT OPTION;
+    GRANT ALL ON *.* TO '<<ADMIN_USERNAME>>'@'%' WITH GRANT OPTION;
+    
+    SET GLOBAL max_connections=10000;
+    SET GLOBAL gtid_strict_mode=ON;
+    
+
+  maxscale.cnf: |
+    # Copyright (C) 2018, MariaDB Corporation
+    #
+    # Defines a starting configuration for MaxScale instances
+    
+    [maxscale]
+    threads=auto
+    # enable the REST API
+    admin_enabled=true
+    admin_host=127.0.0.1
+    # always start as passive, then upgrade to active based on the state store's response
+    passive=true 
+    
+    [MaxAdmin-Service]
+    type=service
+    router=cli
+    
+    [MaxAdmin-Listener]
+    type=listener
+    service=MaxAdmin-Service
+    protocol=maxscaled
+    socket=default
+    
+    # Monitor for the servers
+    # This will keep MaxScale aware of the state of the servers.
+    # MySQL Monitor documentation:
+    # https://github.com/mariadb-corporation/MaxScale/blob/2.2/Documentation/Monitors/MariaDB-Monitor.md
+    
+    [MariaDB-Monitor]
+    type=monitor
+    module=mariadbmon
+    user=<<REPLICATION_USERNAME>>
+    passwd=<<REPLICATION_PASSWORD>>
+    monitor_interval=2000
+    auto_failover=true
+    auto_rejoin=true
+    
+    # Service definitions
+    # Service Definition for a read-only service and a read/write splitting service.
+    
+    # ReadConnRoute documentation:
+    # https://github.com/mariadb-corporation/MaxScale/blob/2.2/Documentation/Routers/ReadConnRoute.md
+    
+    [Read-Only-Service]
+    type=service
+    router=readconnroute
+    user=<<REPLICATION_USERNAME>>
+    passwd=<<REPLICATION_PASSWORD>>
+    router_options=slave
+    
+    # ReadWriteSplit documentation:
+    # https://github.com/mariadb-corporation/MaxScale/blob/2.2/Documentation/Routers/ReadWriteSplit.md
+    
+    [Read-Write-Service]
+    type=service
+    router=readwritesplit
+    user=<<REPLICATION_USERNAME>>
+    passwd=<<REPLICATION_PASSWORD>>
+    # force client to be disconnected while in read-only mode
+    master_failure_mode=fail_on_write
+    # use master for reads, assuming a high volume read
+    master_accept_reads=true
+    
+    [MaxInfo]
+    type=service
+    router=maxinfo
+    user=monitor
+    passwd=monitor 
+    
+    # Listener definitions for the services
+    # Listeners represent the ports the services will listen on.
+    
+    [Read-Only-Listener]
+    type=listener
+    service=Read-Only-Service
+    protocol=MySQLClient
+    port=4008
+    
+    [Read-Write-Listener]
+    type=listener
+    service=Read-Write-Service
+    protocol=MySQLClient
+    port=4006
+    
+    [MaxInfo JSON Listener]
+    type=listener
+    service=MaxInfo
+    protocol=HTTPD
+    port=8003
+---
+# Source: mariadb-enterprise/templates/catalog.yaml
+# Copyright (C) 2018, MariaDB Corporation
+#
+# Defines a columnstore configuration in a StatefulSet behind
+# a headless service. 
+
+# Allows scaling the number of server instances
+# by using:
+# kubectl scale sts <label>-mdb-cs-service --replicas=<number of server instances>
+
+# Headless service for stable DNS entries for StatefulSet members
+apiVersion: v1
+kind: Service
+metadata:
+  name: boza-1-mdb-cs-service
+  labels:
+    mariadb: boza-1
+spec:
+  ports:
+  - name: mariadb
+    port: 3306
+    targetPort: 3306
+  clusterIP: None
+  selector:
+    columnstore.mariadb: boza-1
+---
+# Source: mariadb-enterprise/templates/catalog.yaml
+# Copyright (C) 2018, MariaDB Corporation
+#
+# Defines a state store server that maintains (through heartbeat calls
+# from each pod in a MariaDB cluster on a regular scheduled interval):
+#   * a list of MaxScale instances
+#   * a list of MariaDB server instances
+#   * a reference to a single active MaxScale instance
+#   * a reference to a single Master instance
+#
+# The number of replicas should be exactly 1.
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: boza-1-mdb-state
+  labels:
+    mariadb: boza-1
+    state-store.mariadb: boza-1
+    
+spec:
+  selector:
+    state-store.mariadb: boza-1
+  ports:
+  - protocol: TCP
+    port: 80
+---
+# Source: mariadb-enterprise/templates/catalog.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boza-1-mdb-state
+  labels:
+    mariadb: boza-1
+    state-store.mariadb: boza-1
+    
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      state-store.mariadb: boza-1
+  template:
+    metadata:
+      labels:
+        mariadb: boza-1
+        state-store.mariadb: boza-1
+    spec:
+      containers:
+      - image: mariadb/statestore:0.0.3
+        command: ["/bin/sh"]
+        args: ["-c", "cd /root; node ./server.js"]
+        imagePullPolicy: IfNotPresent
+        name: state-store
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: mariadb-configtemplate-vol
+            mountPath: /mnt/config-template
+      volumes:
+      - name: mariadb-configtemplate-vol
+        configMap:
+          name: boza-1-mariadb-config
+      restartPolicy: Always
+---
+# Source: mariadb-enterprise/templates/catalog.yaml
+# a StatefulSet for the master/slave cluster
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: boza-1-mdb-cs-pm-module
+  labels:
+    mariadb: boza-1
+    columnstore.mariadb: boza-1
+spec:
+  selector:
+    matchLabels:
+      columnstore.mariadb: boza-1
+  serviceName: boza-1-mdb-cs-service
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        mariadb: boza-1
+        columnstore.mariadb: boza-1
+    spec:
+      initContainers:
+      ## runs an initialization script to prepare the correct startup configuration
+      - name: init-columnstore-pm
+        image: nastybuff/cs:latest
+        command:
+          - bash
+          - /mnt/config-template/init-configurations.sh
+          - columnstore
+        env:
+          - name: BACKUP_CLAIM_NAME
+            value: 
+          - name: CLUSTER_TOPOLOGY
+            value: columnstore
+          - name: MARIADB_CS_NODE
+            value: PM
+        volumeMounts:
+          - mountPath: /mnt/secrets
+            name: mariadb-secrets-vol
+            readOnly: true
+          - mountPath: /docker-entrypoint-initdb.d
+            name: mariadb-entrypoint-vol
+          - mountPath: /mnt/config-template
+            name: mariadb-configtemplate-vol
+          - mountPath: /mnt/config-map
+            name: mariadb-config-vol
+      containers:
+#Columnstore Module
+      - name: columnstore-module-pm
+        image: nastybuff/cs:latest
+        # start a mariadb instance
+        command:
+        - bash
+        - /mnt/config-map/start-mariadb-instance.sh
+        # command: ["ls"]
+        # args: ["mnt/config-map"]
+        env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "Y"
+        - name: CLUSTER_TOPOLOGY
+          value: columnstore
+        - name: MARIADB_CS_NODE
+          value: PM
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mariadb-entrypoint-vol
+          mountPath: /docker-entrypoint-initdb.d
+        - name: mariadb-config-vol
+          mountPath: /mnt/config-map
+        # a permanent volume for data storage
+        - name: data
+          mountPath: /usr/local/mariadb/columnstore/mysql/db
+          subPath: db
+        # livenessProbe:
+        #   exec:
+        #     command: ["mysqladmin", "ping"]
+        #   initialDelaySeconds: 30
+        #   periodSeconds: 10
+        #   timeoutSeconds: 5
+        # readinessProbe:
+        #   exec:
+        #     # Check we can execute queries over TCP (skip-networking is off).
+        #     command: ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
+        #   initialDelaySeconds: 5
+        #   periodSeconds: 2
+        #   timeoutSeconds: 1
+      volumes:
+      - name: mariadb-entrypoint-vol
+        emptyDir: {}
+      - name: mariadb-config-vol
+        emptyDir: {}
+      - name: mariadb-configtemplate-vol
+        configMap:
+          name: boza-1-mariadb-config
+      - name: mariadb-secrets-vol
+        secret:
+          secretName: boza-1-mariadb-secret
+
+  # ensures persistent volumes end up on the same pod
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        mariadb: boza-1
+        storage.mariadb: boza-1
+    spec:
+      accessModes: ["ReadWriteMany"]
+      resources:
+        requests:
+          storage: 256Mi
+---
+# Source: mariadb-enterprise/templates/catalog.yaml
+# a StatefulSet for the columnstore UMs cluster
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: boza-1-mdb-cs-um-module
+  labels:
+    mariadb: boza-1
+    columnstore.mariadb: boza-1
+spec:
+  selector:
+    matchLabels:
+      columnstore.mariadb: boza-1
+  serviceName: boza-1-mdb-cs-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        mariadb: boza-1
+        columnstore.mariadb: boza-1
+    spec:
+      initContainers:
+      ## runs a state store client to determine the IP of the active master
+      - name: init-get-um-master
+        image: mariadb/statestore:0.0.3
+        command: ["/bin/sh"]
+        args: ["-c", "cd /root; node ./client.js mariadb-init boza-1-mdb-state /mnt/config-map"]
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /mnt/config-map
+            name: mariadb-config-vol
+          - mountPath: /mnt/config-template
+            name: mariadb-configtemplate-vol
+      ## runs an initialization script to prepare the correct startup configuration
+      - name: init-columnstore-um
+        image: nastybuff/cs:latest
+        command:
+          - bash
+          - /mnt/config-template/init-configurations.sh
+          - columnstore
+        env:
+          - name: BACKUP_CLAIM_NAME
+            value: 
+          - name: CLUSTER_TOPOLOGY
+            value: columnstore
+          - name: MARIADB_CS_NODE
+            value: UM
+        volumeMounts:
+          - mountPath: /mnt/secrets
+            name: mariadb-secrets-vol
+            readOnly: true
+          - mountPath: /docker-entrypoint-initdb.d
+            name: mariadb-entrypoint-vol
+          - mountPath: /mnt/config-template
+            name: mariadb-configtemplate-vol
+          - mountPath: /mnt/config-map
+            name: mariadb-config-vol
+      containers:
+#Columnstore Module
+      - name: columnstore-module-um
+        image: nastybuff/cs:latest
+        # start a mariadb instance
+        command:
+        - bash
+        - /mnt/config-map/start-mariadb-instance.sh
+        # command: ["ls"]
+        # args: ["mnt/config-map"]
+        env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "Y"
+        - name: CLUSTER_TOPOLOGY
+          value: columnstore
+        - name: MARIADB_CS_NODE
+          value: UM
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mariadb-entrypoint-vol
+          mountPath: /docker-entrypoint-initdb.d
+        - name: mariadb-config-vol
+          mountPath: /mnt/config-map
+        # a permanent volume for data storage
+        - name: data
+          mountPath: /usr/local/mariadb/columnstore/mysql/db
+          subPath: db
+        # livenessProbe:
+        #   exec:
+        #     command: ["mysqladmin", "ping"]
+        #   initialDelaySeconds: 30
+        #   periodSeconds: 10
+        #   timeoutSeconds: 5
+        # readinessProbe:
+        #   exec:
+        #     # Check we can execute queries over TCP (skip-networking is off).
+        #     command: ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
+        #   initialDelaySeconds: 5
+        #   periodSeconds: 2
+        #   timeoutSeconds: 1
+
+      # runs a state store client to ensure the state is being maitained
+      - name: state-client
+        image: mariadb/statestore:0.0.3
+        command: ["/bin/sh"]
+        args: ["-c", "cd /root; node ./client.js mariadb boza-1-mdb-state /mnt/config-map"]
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /mnt/config-template
+            name: mariadb-configtemplate-vol
+      restartPolicy: Always
+      volumes:
+      - name: mariadb-entrypoint-vol
+        emptyDir: {}
+      - name: mariadb-config-vol
+        emptyDir: {}
+      - name: mariadb-configtemplate-vol
+        configMap:
+          name: boza-1-mariadb-config
+      - name: mariadb-secrets-vol
+        secret:
+          secretName: boza-1-mariadb-secret
+
+  # ensures persistent volumes end up on the same pod
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        mariadb: boza-1
+        storage.mariadb: boza-1
+    spec:
+      accessModes: ["ReadWriteMany"]
+      resources:
+        requests:
+          storage: 256Mi
