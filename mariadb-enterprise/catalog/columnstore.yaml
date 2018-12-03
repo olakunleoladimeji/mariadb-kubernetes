@@ -189,7 +189,7 @@ spec:
         id.mariadb: "{{ .Values.mariadb.cluster.id }}"
         {{- end }}
     spec:
-      accessModes: ["ReadWriteMany"]
+      accessModes: ["ReadWriteOnce"]
       resources:
         requests:
           storage: {{ .Values.mariadb.server.storage.size }}
@@ -378,7 +378,7 @@ spec:
         id.mariadb: "{{ .Values.mariadb.cluster.id }}"
         {{- end }}
     spec:
-      accessModes: ["ReadWriteMany"]
+      accessModes: ["ReadWriteOnce"]
       resources:
         requests:
           storage: {{ .Values.mariadb.server.storage.size }}
