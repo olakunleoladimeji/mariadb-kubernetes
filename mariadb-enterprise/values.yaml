@@ -1,5 +1,7 @@
 mariadb:
-  debug: 
+  debug: null
+  log:
+    fancy: null
 
   # general cluster parameters
   cluster:
