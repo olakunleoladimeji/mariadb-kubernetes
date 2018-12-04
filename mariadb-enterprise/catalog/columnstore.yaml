@@ -102,7 +102,7 @@ spec:
         # start a mariadb instance
         command:
         - bash
-        # - /mnt/config-map/start-mariadb-instance.sh
+        - /mnt/config-map/start-mariadb-instance.sh
         # command: ["ls"]
         # args: ["mnt/config-map"]
         env:
@@ -148,19 +148,24 @@ spec:
         - name: data
           mountPath: /usr/local/mariadb/columnstore/mysql/db
           subPath: db
-        # livenessProbe:
-        #   exec:
-        #     command: ["mysqladmin", "ping"]
-        #   initialDelaySeconds: 30
-        #   periodSeconds: 10
-        #   timeoutSeconds: 5
-        # readinessProbe:
-        #   exec:
-        #     # Check we can execute queries over TCP (skip-networking is off).
-        #     command: ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
-        #   initialDelaySeconds: 5
-        #   periodSeconds: 2
-        #   timeoutSeconds: 1
+        livenessProbe:
+          exec:
+            command:
+            - bash
+            - /mnt/config-map/liveness.sh
+            - getSystemStatus 
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - bash
+            - /mnt/config-map/readiness.sh
+            - getSystemStatus 
+          initialDelaySeconds: 30
+          periodSeconds: 2
+          timeoutSeconds: 1
       volumes:
       {{- if .Values.mariadb.server.backup.claimName }}
       - name: backup-data-storage

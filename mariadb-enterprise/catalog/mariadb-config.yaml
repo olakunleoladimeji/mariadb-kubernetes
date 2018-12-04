@@ -18,6 +18,10 @@ data:
 {{- end }}
 
 {{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
+  liveness.sh: |
+{{ tpl (.Files.Get "config/columnstore/liveness.sh") . | indent 4 }}
+  readiness.sh: |
+{{ tpl (.Files.Get "config/columnstore/readiness.sh") . | indent 4 }}
   init_um_master.sh: |
 {{ tpl (.Files.Get "config/columnstore/init_um_master.sh") . | indent 4 }}
   init_um_slave.sh: |
