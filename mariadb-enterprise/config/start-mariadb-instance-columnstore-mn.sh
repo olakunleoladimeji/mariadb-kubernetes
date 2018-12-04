@@ -11,11 +11,20 @@ REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
 RELEASE_NAME="<<RELEASE_NAME>>"
 CLUSTER_ID="<<CLUSTER_ID>>"
 MARIADB_CS_DEBUG="<<MARIADB_CS_DEBUG>>"
+export MAX_TRIES=60
+#Get last digit of the hostname
+MY_HOSTNAME=$(hostname)
+SPLIT_HOST=(${MY_HOSTNAME//-/ }); 
+CONT_INDEX=${SPLIT_HOST[(${#SPLIT_HOST[@]}-1)]}
+MY_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+
 if [ ! -z $MARIADB_CS_DEBUG ]; then
     #set +x
+    
     echo '-------------------------'
     echo 'Start CS Module Container'
     echo '-------------------------'
+    echo 'IP:'$MY_IP
     #set -x
 fi
 
@@ -118,22 +127,18 @@ if [[ "$MARIADB_CS_NODE" == "UM" && -f "/mnt/config-map/master" ]]; then
     export MARIADB_CS_MASTER="$(cat /mnt/config-map/master)"
 fi
 
-MY_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
 #what else can it be in this file
-echo $CLUSTER_TOPOLOGY
 if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
-    echo "Init Columnstore"
-    echo "$MARIADB_CS_NODE:$MY_IP"
-    echo "Master:$MARIADB_CS_MASTER"
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        echo "StartColumnstore"
+        echo "$MARIADB_CS_NODE:$MY_IP"
+        echo "Master:$MARIADB_CS_MASTER"
+        echo "IP:$MY_IP"
+    fi
     if [[ "$MARIADB_CS_NODE" == "UM" && -f "/mnt/config-map/master" ]]; then
         export MARIADB_CS_MASTER="$(cat /mnt/config-map/master)"
     fi
 
-    #Get last digit of the hostname
-    MY_HOSTNAME=$(hostname)
-    SPLIT_HOST=(${MY_HOSTNAME//-/ }); 
-    CONT_INDEX=${SPLIT_HOST[(${#SPLIT_HOST[@]}-1)]}
-    
     if [[ "$MARIADB_CS_NODE" == "UM" ]]; then
         if [[ "$CONT_INDEX" -eq 0 ]]; then
             wait_ping_hosts
@@ -150,8 +155,10 @@ if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
     elif [[ "$MARIADB_CS_NODE" == "PM" ]]; then
         #if [[ "$CONT_INDEX" -eq $(( PM_COUNT-1 )) ]]; then
         if [[ "$CONT_INDEX" -eq 0 ]]; then
-            #Last PM
-            echo "Start post config"
+            #First PM
+            echo "Frst PM"
+            echo "Starting postConfiguration"
+            fi
             wait_ping_hosts
             MARIADB_CS_POSTCFG_INPUT=$(build_post_config_input)
             if [ ! -z $MARIADB_CS_DEBUG ]; then
@@ -162,7 +169,8 @@ if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
             exec /usr/sbin/runsvdir-start
         else
             #Any other PM
-            echo "Start PM config"
+            echo "PM node"
+            fi
             sh /mnt/config-map/cs_init.sh 2>&1 &
             exec /usr/sbin/runsvdir-start
         fi

@@ -9,6 +9,7 @@ REPLICATION_USERNAME="<<REPLICATION_USERNAME>>"
 REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
 RELEASE_NAME="<<RELEASE_NAME>>"
 CLUSTER_ID="<<CLUSTER_ID>>"
+MARIADB_CS_DEBUG="<<MARIADB_CS_DEBUG>>"
 
 MCSDIR=/usr/local/mariadb/columnstore
 # file used to track / record initialization and prevent subsequent rerun

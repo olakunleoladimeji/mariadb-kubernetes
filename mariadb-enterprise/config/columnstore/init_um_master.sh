@@ -9,6 +9,8 @@ REPLICATION_USERNAME="<<REPLICATION_USERNAME>>"
 REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
 RELEASE_NAME="<<RELEASE_NAME>>"
 CLUSTER_ID="<<CLUSTER_ID>>"
+MARIADB_CS_DEBUG="<<MARIADB_CS_DEBUG>>"
+
 MCSDIR=/usr/local/mariadb/columnstore
 export MCSDIR
 # file used to track / record initialization and prevent subsequent rerun
@@ -26,14 +28,29 @@ SERVER_ID=$(hostname -i | cut -d "." -f 4)
 SERVER_SUBNET=$(hostname -i | cut -d "." -f 1-3 -s)
 sed -i "s/server-id =.*/server-id = $SERVER_ID/" /usr/local/mariadb/columnstore/mysql/my.cnf
 
-run_tests(){
-    if [  -f "/mnt/config-map/test_cs.sh" ]; then
-    CUR_DIR=`pwd`
-    cd /mnt/config-map/
-    bash ./test_cs.sh
-    cd $CUR_DIR
-    fi
+function run_tests(){
+        if [  -f "/mnt/config-map/test_cs.sh" ]; then
+            CUR_DIR=`pwd`
+            cd /mnt/config-map/
+            bash ./test_cs.sh
+            cd $CUR_DIR
+        fi
 }
+
+function continuous_test(){
+    while true; do
+        sleep 5
+        $MCSDIR/bin/mcsadmin getSystemInfo
+        sleep 5
+        run_tests
+    done
+}
+
+function print_info(){
+        $MCSDIR/bin/mcsadmin getSoftwareInfo
+        $MCSDIR/bin/mcsadmin getSystemMemory
+}
+
 # usage: file_env VAR [DEFAULT]
 #    ie: file_env 'XYZ_DB_PASSWORD' 'example'
 # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
@@ -59,11 +76,12 @@ file_env() {
 # wait for the ProcMon process to start
 wait_for_procmon()
 {
-    ps -e | grep ProcMon
+    ps -e | grep ProcMon 
     while [ 1 -eq $? ]; do
-        sleep 1
+        sleep 1 
         ps -e | grep ProcMon
     done
+    echo "Done."
 }
 
 execute_sql()
@@ -108,23 +126,18 @@ if [ -e $FLAG ]; then
     run_tests    
     exit 0
 fi
-
 echo "Initializing container at $(date) - waiting for ProcMon to start"
-    wait_for_procmon
-export MARIADB_CS_DEBUG 
+wait_for_procmon
 
 echo "Waiting for columnstore to start before running post install files"
-echo "-------------------------------------------------------------------"
-{{- if .Values.mariadb.columnstore.retries}}
-MAX_TRIES={{ .Values.mariadb.columnstore.retries }}
-{{- else }}
-MAX_TRIES=36
-{{- end }}
 ATTEMPT=1
 # wait for mcsadmin getSystemStatus to show active
 STATUS=$($MCSDIR/bin/mcsadmin getSystemStatus | tail -n +9 | grep System | grep -v "System and Module statuses")
 if [ ! -z $MARIADB_CS_DEBUG ]; then
+    echo ""
     echo "wait_for_columnstore_active($ATTEMPT/$MAX_TRIES): getSystemStatus: $STATUS"
+else
+    echo "."
 fi
 echo "$STATUS" | grep -q 'System.*ACTIVE'
 while [ 1 -eq $? ] && [ $ATTEMPT -le $MAX_TRIES ]; do
@@ -133,10 +146,12 @@ while [ 1 -eq $? ] && [ $ATTEMPT -le $MAX_TRIES ]; do
     STATUS=$($MCSDIR/bin/mcsadmin getSystemStatus | tail -n +9 | grep System | grep -v "System and Module statuses")
     if [ ! -z $MARIADB_CS_DEBUG ]; then
         echo "wait_for_columnstore_active($ATTEMPT/$MAX_TRIES): getSystemStatus: $STATUS"
+    else
+        echo "."
     fi
     echo "$STATUS" | grep -q 'System.*ACTIVE'
 done
-
+echo "Done."
 if [ $ATTEMPT -ge $MAX_TRIES ]; then
     echo "ERROR: ColumnStore did not start after $MAX_TRIES attempts"
     exit 1
@@ -162,6 +177,8 @@ if [ $MYSQLDS_RUNNING -gt 0 ]; then
     while [ 1 -eq $? ] && [ $ATTEMPT -le $MAX_TRIES ]; do
         if [ ! -z $MARIADB_CS_DEBUG ]; then
             echo "wait_for_columnstore_active($ATTEMPT/$MAX_TRIES): create table test error: $STATUS"
+        else 
+            echo "."
         fi
         echo "$STATUS" | grep -q "DML and DDL statements for Columnstore tables can only be run from the replication master."
         if [ 0 -eq $? ]; then
@@ -172,6 +189,7 @@ if [ $MYSQLDS_RUNNING -gt 0 ]; then
         ATTEMPT=$(($ATTEMPT+1))
         STATUS=$("${mysql[@]}" -e "create table $TEST_TABLE(i tinyint) engine=columnstore;" 2>&1)
     done
+    echo "Done"
     "${mysql[@]}" -e "drop table if exists $TEST_TABLE;"
     if [ $ATTEMPT -ge $MAX_TRIES ]; then
         echo "ERROR: ColumnStore not ready for use after $MAX_TRIES attempts, last status: $STATUS"
@@ -292,9 +310,13 @@ if [ ! -z $GENERATED_ROOT ]; then
     echo "Generated MariaDB root password is: $GENERATED_ROOT"
 fi
 echo "Container initialization complete at $(date)"
-
 touch $FLAG
+
 unset MYSQL_PWD
+# if [ ! -z $MARIADB_CS_DEBUG ]; then
+#     continuous_test
+# fi
+print_info
 run_tests
 
 exit 0;

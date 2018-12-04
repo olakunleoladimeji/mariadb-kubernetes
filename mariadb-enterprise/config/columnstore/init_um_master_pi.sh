@@ -12,20 +12,16 @@ if [ ! -z "$CS_WAIT_ATTEMPTS" ]; then
     MAX_TRIES=$CS_WAIT_ATTEMPTS
 fi
 
-# if argument is -d enable debug output
-if [ $# -gt 0 ] && [ "$1" == "-d" ]; then
-    MARIADB_CS_DEBUG=1
-fi
-
 if [ ! -z $MARIADB_CS_DEBUG ]; then
     #set +x
     echo '------------------------------'
     echo 'Starting UM Master Post Install'
     echo '------------------------------'
     #set -x
+    echo "Waiting for UM2 to respond"
 fi
 
-echo "Waiting for UM2 to respond"
+
 ATTEMPT=1
 # this essential waits for the root @um1 login to be created as well as the slave to be started.
 STATUS=$(${mysql[@]} -h um2 -e "show slave status\G" | grep "Waiting for master")

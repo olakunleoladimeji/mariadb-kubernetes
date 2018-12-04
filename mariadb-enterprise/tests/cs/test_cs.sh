@@ -96,15 +96,20 @@ tests+=( "[ "$(echo 'SELECT price from transactions WHERE transaction_type = 1 O
 tests+=( "[ "$(echo 'SELECT sum(price) FROM transactions' | mysql bookstore)" == "115003016.41" ]" "Testing SELECT sum(price) FROM transactions. Expected: 115003016.41" )
 tests+=( "[ "$(echo 'SELECT DISTINCT count(customer_id) from transactions' | mysql bookstore)" == "11279171" ]" "Testing SELECT DISTINCT count(customer_id) from transactions. Expected: 11279171" )
 tests+=( "[ "$(echo 'SET @@max_length_for_sort_data = 501;SELECT p.p FROM (SELECT bookname,category, sum(cover_price) p from books group by bookname,category) p ORDER BY category LIMIT 1' | mysql bookstore)" == $FAIL_STRING ]" "Testing limited sort;. Expected: FAIL" )
-tests+=( "[ "$(echo 'SET @@max_length_for_sort_data = 5001;SELECT p.p FROM (SELECT bookname,category, sum(cover_price) p from books group by bookname,category) p ORDER BY category LIMIT 1' | mysql bookstore)" == "3.49" ]" "Testing within the limit. Expected: 3.49" )
+tests+=( "[ "$(echo 'SET @@max_length_for_sort_data = 5001;SELECT p.p FROM (SELECT bookname,category, sum(cover_price) p from books group by bookname,category) p ORDER BY bookname,category LIMIT 1' | mysql bookstore)" == "11.89" ]" "Testing within the limit. Expected: 11.89" )
 {{- end}}
 start_tst tests[@] 3
 
-
+# tests+=( "[ "$(echo 'SET @@max_length_for_sort_data = 5001;SELECT p.p FROM (SELECT bookname,category, sum(cover_price) p from books group by bookname,category) p ORDER BY category LIMIT 1' | mysql bookstore)" == "3.49" ]" "Testing within the limit. Expected: 3.49" )
+# INSERT INTO test2 VALUES (1, 6, 'Hello!');
+# INSERT INTO test2 VALUES (2, 7, 'Bye!');
+# DELETE FROM test WHERE a = 1;
+# SELECT COUNT()
 
 # SELECT s.a,s.b FROM (
 # SELECT "addresses" a, COUNT(*) b FROM addresses
 # UNION ALL
+
 # SELECT "books" a, COUNT(*) b FROM books
 # UNION ALL
 # SELECT "cards" a, COUNT(*) b FROM cards
