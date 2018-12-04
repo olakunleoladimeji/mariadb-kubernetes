@@ -4,29 +4,6 @@
 # This script customizes templates based on the parameters passed to a command-line tool
 # the path to the target directory needs to be passed as first argument
 
-
-
-function expand_templates() {
-    sed -e "s/<<MASTER_HOST>>/$MASTER_HOST/g" \
-        -e "s/<<ADMIN_USERNAME>>/$ADMIN_USER/g" \
-        -e "s/<<ADMIN_PASSWORD>>/$ADMIN_PWD/g" \
-        -e "s/<<REPLICATION_USERNAME>>/$REPL_USER/g" \
-        -e "s/<<REPLICATION_PASSWORD>>/$REPL_PWD/g" \
-        -e "s/<<RELEASE_NAME>>/$RELEASE_NAME/g" \
-        -e "s/<<CLUSTER_ID>>/$CLUSTER_ID/g" \
-        $1
-}
-
-{{- if .Values.mariadb.debug}}
-    #set +x
-    echo '------------------------'
-    echo 'Init CS Module Container'
-    echo '------------------------'
-    #set -x
-{{- end }}
-
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # APPLICATION=$(hostname -f | cut -d '.' -f 2 | cut -d '-' -f 1)
 # ENVIRONMENT=$(hostname -f | cut -d '.' -f 2 | cut -d '-' -f 2)
 ADMIN_USER=$(cat /mnt/secrets/admin-username)
@@ -36,6 +13,32 @@ REPL_PWD=$(cat /mnt/secrets/repl-password)
 DB_HOST="$(hostname -f | cut -d '.' -f 1).$(hostname -f | cut -d '.' -f 2)"
 UM_COUNT={{ .Values.mariadb.columnstore.um.replicas }}
 PM_COUNT={{ .Values.mariadb.columnstore.pm.replicas }}
+MARIADB_CS_DEBUG={{ .Values.mariadb.debug }}
+
+function expand_templates() {
+    sed -e "s/<<MASTER_HOST>>/$MASTER_HOST/g" \
+        -e "s/<<ADMIN_USERNAME>>/$ADMIN_USER/g" \
+        -e "s/<<ADMIN_PASSWORD>>/$ADMIN_PWD/g" \
+        -e "s/<<REPLICATION_USERNAME>>/$REPL_USER/g" \
+        -e "s/<<REPLICATION_PASSWORD>>/$REPL_PWD/g" \
+        -e "s/<<RELEASE_NAME>>/$RELEASE_NAME/g" \
+        -e "s/<<CLUSTER_ID>>/$CLUSTER_ID/g" \
+        -e "s/<<MARIADB_CS_DEBUG>>/$MARIADB_CS_DEBUG/g" \        
+        $1
+}
+
+if [ ! -z $MARIADB_CS_DEBUG ]; then
+    #set +x
+    echo '------------------------'
+    echo 'Init CS Module Container'
+    echo '------------------------'
+    #set -x
+fi
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+
+
 
 if [[ "$MARIADB_CS_NODE" == "UM" && -f "/mnt/config-map/master" ]]; then
     export MARIADB_CS_MASTER="$(cat /mnt/config-map/master)"

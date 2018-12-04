@@ -20,14 +20,20 @@ POST_REP_CMD=''
 MCSDIR=/usr/local/mariadb/columnstore
 mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )
 
-if [ ! -z $MARIADB_CS_DEBUG ]; then
-    #set +x
-    echo '------------------------'
-    echo 'Starting UM Master      '
-    echo '------------------------'
-    #set -x
-fi
+# hack to ensure server-id is set to unique value per vm because my.cnf is
+# not in a good location for a volume
+SERVER_ID=$(hostname -i | cut -d "." -f 4)
+SERVER_SUBNET=$(hostname -i | cut -d "." -f 1-3 -s)
+sed -i "s/server-id =.*/server-id = $SERVER_ID/" /usr/local/mariadb/columnstore/mysql/my.cnf
 
+run_tests(){
+    if [  -f "/mnt/config-map/test_cs.sh" ]; then
+    CUR_DIR=`pwd`
+    cd /mnt/config-map/
+    bash ./test_cs.sh
+    cd $CUR_DIR
+    fi
+}
 # usage: file_env VAR [DEFAULT]
 #    ie: file_env 'XYZ_DB_PASSWORD' 'example'
 # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
@@ -73,11 +79,15 @@ execute_sql()
                 fi
             done
 }
-# hack to ensure server-id is set to unique value per vm because my.cnf is
-# not in a good location for a volume
-SERVER_ID=$(hostname -i | cut -d "." -f 4)
-SERVER_SUBNET=$(hostname -i | cut -d "." -f 1-3 -s)
-sed -i "s/server-id =.*/server-id = $SERVER_ID/" /usr/local/mariadb/columnstore/mysql/my.cnf
+
+if [ ! -z $MARIADB_CS_DEBUG ]; then
+    #set +x
+    echo '------------------------'
+    echo 'Starting UM Master      '
+    echo '------------------------'
+    #set -x
+fi
+
 
 # hack to make master-dist rsync.sh script do nothing as it fails otherwise
 # in non distributed on windows and mac (occasionally on ubuntu).
@@ -90,9 +100,12 @@ chmod a+x /usr/local/mariadb/columnstore/bin/rsync.sh
 # root vs non root install
 export USER=root
 
+
+
 # Initialize CS only once.
 if [ -e $FLAG ]; then
     echo "Container already initialized at $(date)"
+    run_tests    
     exit 0
 fi
 
@@ -102,7 +115,6 @@ export MARIADB_CS_DEBUG
 
 echo "Waiting for columnstore to start before running post install files"
 echo "-------------------------------------------------------------------"
-#----------------------------------------------------------------------------
 {{- if .Values.mariadb.columnstore.retries}}
 MAX_TRIES={{ .Values.mariadb.columnstore.retries }}
 {{- else }}
@@ -168,8 +180,6 @@ if [ $MYSQLDS_RUNNING -gt 0 ]; then
         echo "System ready"
     fi
 fi
-
-#----------------------------------------------------------------------------
 
 # sh /usr/sbin/wait_for_columnstore_active 2>&1
 # if [ 1 -eq $? ]; then
@@ -269,7 +279,6 @@ else
     # execute_sql "$users_to_be_dropped"
 fi
 cd $WRK_DIR
-pwd
 
 #TODO: Revise this after everything else is working
 # execute_sql "$POST_REP_CMD_NO_ROOT"
@@ -286,9 +295,6 @@ echo "Container initialization complete at $(date)"
 
 touch $FLAG
 unset MYSQL_PWD
-if [  -f "/mnt/config-map/test_cs.sh" ]; then
-  cd /mnt/config-map/
-  bash ./test_cs.sh
-fi
+run_tests
 
 exit 0;

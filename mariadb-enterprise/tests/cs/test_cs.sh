@@ -1,9 +1,8 @@
 #!/bin/bash
-{{- if .Values.mariadb.log.fancy}}
 RED_CD="\033[0;31m"
 GREEN_CD="\033[0;32m"
 NORMAL_CD="\033[0m"
-{{- end}}
+
 export PASS_MSG="$GREEN_CD ✔ Pass $NORMAL_CD"
 export FAIL_MSG="$RED_CD ✘ Fail $NORMAL_CD"
 

@@ -5,13 +5,13 @@
 
 # Allows scaling the number of server instances
 # by using:
-# kubectl scale sts <label>-mdb-cs-service --replicas=<number of server instances>
+# kubectl scale sts <label>-mdb-clust --replicas=<number of server instances>
 
 # Headless service for stable DNS entries for StatefulSet members
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-mdb-cs-service
+  name: {{ .Release.Name }}-mdb-clust
   labels:
     mariadb: {{ .Release.Name }}
     {{- if .Values.mariadb.cluster.id }}
@@ -36,7 +36,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Release.Name }}-{{ .Values.mariadb.columnstore.pm.moduleName }}
+  name: {{ .Release.Name }}-mdb-cs-pm-module
   labels:
     mariadb: {{ .Release.Name }}
     columnstore.mariadb: {{ .Release.Name }}
@@ -53,7 +53,7 @@ spec:
   selector:
     matchLabels:
       columnstore.mariadb: {{ .Release.Name }}
-  serviceName: {{ .Release.Name }}-mdb-cs-service
+  serviceName: {{ .Release.Name }}-mdb-clust
   replicas: {{ .Values.mariadb.columnstore.pm.replicas }}
   template:
     metadata:
@@ -102,7 +102,7 @@ spec:
         # start a mariadb instance
         command:
         - bash
-        - /mnt/config-map/start-mariadb-instance.sh
+        # - /mnt/config-map/start-mariadb-instance.sh
         # command: ["ls"]
         # args: ["mnt/config-map"]
         env:
@@ -203,7 +203,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Release.Name }}-{{ .Values.mariadb.columnstore.um.moduleName }}
+  name: {{ .Release.Name }}-mdb-cs-um-module
   labels:
     mariadb: {{ .Release.Name }}
     columnstore.mariadb: {{ .Release.Name }}
@@ -220,7 +220,7 @@ spec:
   selector:
     matchLabels:
       columnstore.mariadb: {{ .Release.Name }}
-  serviceName: {{ .Release.Name }}-mdb-cs-service
+  serviceName: {{ .Release.Name }}-mdb-clust
   replicas: {{ .Values.mariadb.columnstore.um.replicas }}
   template:
     metadata:
