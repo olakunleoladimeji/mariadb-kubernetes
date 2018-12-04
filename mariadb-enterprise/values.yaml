@@ -1,7 +1,5 @@
 mariadb:
   debug: null
-  log:
-    fancy: null
 
   # general cluster parameters
   cluster:
@@ -65,23 +63,13 @@ mariadb:
 # columnstore cluster parameters
   columnstore:
     pm:
-      moduleName: mdb-cs-pm-module
       replicas: 3
-      #postConfigInput: 2\n1\nn\ny\ncolumnstore-1\n1\n # Replication
-      postConfigInput: 2\n1\nn\nn\ncolumnstore-1\n1\n  #No Replication
     um:
-      moduleName: mdb-cs-um-module
       replicas: 1
     image: nastybuff/cs:latest
+
+    #For test purposes
+    #The following parameters will be will be removed from the final setup
     test: true
     sandbox: true
     retries: 60 # 60x5=300sec - up to 5min 
-
-    # image: mariadb/columnstore:latest
-    # randomRootPass: 1
-    # rootPass: null
-    # allowEmptyPass: null
-    # dbUser: dbuser
-    # dbPass: dbpassword
-    # dbName: mydb
-    # debug: true

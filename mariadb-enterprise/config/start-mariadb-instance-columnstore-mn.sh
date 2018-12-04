@@ -2,14 +2,7 @@
 # Copyright (C) 2018, MariaDB Corporation
 #
 # Starts and initializes a MariaDB columnstore instance
-{{- if .Values.mariadb.debug}}
-    #set +x
-    echo '-------------------------'
-    echo 'Start CS Module Container'
-    echo '-------------------------'
-    #set -x
-{{- end }}
-#Not expanded
+
 MASTER_HOST="<<MASTER_HOST>>"
 ADMIN_USERNAME="<<ADMIN_USERNAME>>"
 ADMIN_PASSWORD="<<ADMIN_PASSWORD>>"
@@ -17,22 +10,25 @@ REPLICATION_USERNAME="<<REPLICATION_USERNAME>>"
 REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
 RELEASE_NAME="<<RELEASE_NAME>>"
 CLUSTER_ID="<<CLUSTER_ID>>"
+MARIADB_CS_DEBUG="<<MARIADB_CS_DEBUG>>"
+if [ ! -z $MARIADB_CS_DEBUG ]; then
+    #set +x
+    echo '-------------------------'
+    echo 'Start CS Module Container'
+    echo '-------------------------'
+    #set -x
+fi
 
-{{- if .Values.mariadb.debug}}
-export MARIADB_CS_DEBUG=1
-{{- end }}
-
-#TODO: Container Install 
-#TODO: Move those to the container image
-    #yum install -y bind-utils
-#TODO: End Container Install
-
+PREFIX_REPLICATION="2\n1\nn\ny\ncolumnstore-1\n1\n" 
+PREFIX_NO_REPLICATION="2\n1\nn\nn\ncolumnstore-1\n1\n"
+PREFIX=$PREFIX_NO_REPLICATION
+CS_SERVICE="$RELEASE_NAME-mdb-clust"
 UM_COUNT={{ .Values.mariadb.columnstore.um.replicas }}
 PM_COUNT={{ .Values.mariadb.columnstore.pm.replicas }}
+UM_HOST="$RELEASE_NAME-mdb-cs-um-module-"
+PM_HOST="$RELEASE_NAME-mdb-cs-pm-module-"
+
 function ping_hosts() { 
-    CS_SERVICE="{{ .Release.Name }}-mdb-cs-service"
-    UM_HOST="{{ .Release.Name }}-{{ .Values.mariadb.columnstore.um.moduleName }}-"
-    PM_HOST="{{ .Release.Name }}-{{ .Values.mariadb.columnstore.pm.moduleName }}-"
     RET_CD=0
     for i in `seq 0 $(( UM_COUNT-1 ))`
     do
@@ -63,23 +59,19 @@ function wait_ping_hosts() {
     ping_hosts
     hosts_down=$?
     while [[ $hosts_down -gt 0 ]]; do
-        {{- if .Values.mariadb.debug}}
-        echo "$hosts_down hosts still down. Retrying ..."
-        {{- end}}
+        if [ ! -z $MARIADB_CS_DEBUG ]; then
+            echo "$hosts_down hosts still down. Retrying ..."
+        fi
         sleep 5
         ping_hosts
         hosts_down=$?
     done
-    {{- if .Values.mariadb.debug}}
-    echo "All $((UM_COUNT+PM_COUNT)) hosts up ("$UM_COUNT"UM "$PM_COUNT"PM)"
-    {{- end}}
+    if [ ! -z $MARIADB_CS_DEBUG ]; then
+        echo "All $((UM_COUNT+PM_COUNT)) hosts up ("$UM_COUNT"UM "$PM_COUNT"PM)"
+    fi
 }
 
 function build_post_config_input() { 
-    PREFIX="{{ .Values.mariadb.columnstore.pm.postConfigInput }}"
-    CS_SERVICE="{{ .Release.Name }}-mdb-cs-service"
-    UM_HOST="{{ .Release.Name }}-{{ .Values.mariadb.columnstore.um.moduleName }}-"
-    PM_HOST="{{ .Release.Name }}-{{ .Values.mariadb.columnstore.pm.moduleName }}-"
     MODULES=""
     MODULES="$MODULES$UM_COUNT\n"
     for i in `seq 0 $(( UM_COUNT-1 ))`
@@ -162,10 +154,10 @@ if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
             echo "Start post config"
             wait_ping_hosts
             MARIADB_CS_POSTCFG_INPUT=$(build_post_config_input)
-            {{- if .Values.mariadb.debug}}
-            echo $PING_DEBUG
-            echo $MARIADB_CS_POSTCFG_INPUT
-            {{- end}}
+            if [ ! -z $MARIADB_CS_DEBUG ]; then
+                echo $PING_DEBUG
+                echo $MARIADB_CS_POSTCFG_INPUT
+            fi
             sh /mnt/config-map/cs_init.sh 2>&1 &
             exec /usr/sbin/runsvdir-start
         else
