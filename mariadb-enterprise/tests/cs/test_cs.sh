@@ -1,6 +1,12 @@
 #!/bin/bash
-export PASS_MSG="\033[0;32m✔ Pass \033[0m"
-export FAIL_MSG="\033[0;31m✘ Fail \033[0m"
+{{- if .Values.mariadb.log.fancy}}
+RED_CD="\033[0;31m"
+GREEN_CD="\033[0;32m"
+NORMAL_CD="\033[0m"
+{{- end}}
+export PASS_MSG="$GREEN_CD ✔ Pass $NORMAL_CD"
+export FAIL_MSG="$RED_CD ✘ Fail $NORMAL_CD"
+
 start_tst()
 {
     declare -a tsts=("${!1}")
@@ -19,7 +25,7 @@ start_tst()
         if eval "$test"; then
             echo -ne "$PASS_MSG\r\n"
         else
-            echo -ne "$FAIL_MSG\r\n"
+            echo -ne "$FAIL_MSG ("$test")\r\n"
         fi
     done
 }
@@ -27,28 +33,29 @@ start_tst()
 export start_test
 
 
-repeat_tst() {
-    test="$1"
-    # echo ""
-    # echo ">$1<"
-    # echo ">>$2<<"
-    if [ ! -z "$2" ]; then
-        iterations="$2"
-        strlen=${#iterations}
-        for (( k=1; k<$((iterations+1)); k++ ));
-        do            
-            for (( j=0; j<$((strlen-${#k})); j++ )); do echo -en '0' ; done;
-            echo -en "$k"
-            for (( j=0; j<$((strlen)); j++ )); do echo -en '\b' ; done;
-            if ! eval "$test"; then
-                return 1
-            fi
-        done;
+# TODO: Fix this test procedure, currently it is beeing evaluated tooo early
+# repeat_tst() {
+#     test="$1"
+#     # echo ""
+#     # echo ">$1<"
+#     # echo ">>$2<<"
+#     if [ ! -z "$2" ]; then
+#         iterations="$2"
+#         strlen=${#iterations}
+#         for (( k=1; k<$((iterations+1)); k++ ));
+#         do            
+#             for (( j=0; j<$((strlen-${#k})); j++ )); do echo -en '0' ; done;
+#             echo -en "$k"
+#             for (( j=0; j<$((strlen)); j++ )); do echo -en '\b' ; done;
+#             if ! eval "$test"; then
+#                 return 1
+#             fi
+#         done;
 
-    fi
-}
+#     fi
+# }
 
-export repeat_tst
+# export repeat_tst
 
 export MCSDIR=/usr/local/mariadb/columnstore
 
@@ -69,12 +76,12 @@ mysql() {
 }
 
 $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot < initdb.sql #-v
-tests+=( 'repeat_tst "[ $( echo SELECT 1 | mysql "$MARIADB_DATABASE" ) = 1 ]" 200' "Testing 20 times SELECT 1. Expected: 1" )
+tests+=( "[ "$(echo 'SELECT 1' | mysql "$MARIADB_DATABASE" )" = 1 ]" "Testing SELECT 1. Expected: 1" )
 tests+=( "[ "$(echo 'SELECT COUNT(*) FROM test' | mysql "$MARIADB_DATABASE")" = 1 ]" "Testing SELECT COUNT(*) FROM test. Expected: 1" )
 tests+=( "[ "$(echo 'SELECT c FROM test' | mysql "$MARIADB_DATABASE")" == "goodbye!" ]" "Testing SELECT c FROM test. Expected: goodbye!" )
 tests+=( "[ "$(wc -l /var/log/mariadb/columnstore/info.log | cut -d ' ' -f 1)" -gt 0 ]" "Testing log at /var/log/mariadb/columnstore/info.log. Expected: some rows" )
 {{- if .Values.mariadb.columnstore.sandbox}}
-tests+=( 'repeat_tst "[ "$(echo SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1 | mysql bookstore)" == "1.49" ]" 5' "Testing SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1;. Expected: 1.49" )
+tests+=( "[ "$(echo 'SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1' | mysql bookstore)" == "1.49" ]" "Testing SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1;. Expected: 1.49" )
 tests+=( "[ "$(echo 'SELECT COUNT(*) FROM addresses' | mysql bookstore)" = 2666749 ]" "Testing SELECT COUNT(*) FROM addresses. Expected: 2666749" )
 tests+=( "[ "$(echo 'SELECT COUNT(*) FROM books' | mysql bookstore)" = 5001 ]" "Testing SELECT COUNT(*) FROM books. Expected: 5001" )
 tests+=( "[ "$(echo 'SELECT COUNT(*) FROM cards' | mysql bookstore)" = 1604661 ]" "Testing SELECT COUNT(*) FROM cards. Expected: 1604661" )
@@ -86,7 +93,7 @@ tests+=( "[ "$(echo 'SELECT COUNT(*) FROM maritalstatuses' | mysql bookstore)" =
 tests+=( "[ "$(echo 'SELECT COUNT(*) FROM phones' | mysql bookstore)" = 2427033 ]" "Testing SELECT COUNT(*) FROM phones. Expected: 2427033" )
 tests+=( "[ "$(echo 'SELECT COUNT(*) FROM transactions' | mysql bookstore)" = 11279171 ]" "Testing SELECT COUNT(*) FROM transactions. Expected: 11279171" )
 tests+=( "[ "$(echo 'SELECT COUNT(*) FROM transactiontypes' | mysql bookstore)" = 3 ]" "Testing SELECT COUNT(*) FROM transactiontypes. Expected: 3" )
-tests+=( 'repeat_tst "[ "$(echo SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1 | mysql bookstore)" == "1.49" ]" 5' "Testing (5 iterations) SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1;. Expected: 1.49" )
+tests+=( "[ "$(echo 'SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1' | mysql bookstore)" == "1.49" ]" "Testing SELECT price from transactions WHERE transaction_type = 1 ORDER BY price LIMIT 1;. Expected: 1.49" )
 tests+=( "[ "$(echo 'SELECT sum(price) FROM transactions' | mysql bookstore)" == "115003016.41" ]" "Testing SELECT sum(price) FROM transactions. Expected: 115003016.41" )
 tests+=( "[ "$(echo 'SELECT DISTINCT count(customer_id) from transactions' | mysql bookstore)" == "11279171" ]" "Testing SELECT DISTINCT count(customer_id) from transactions. Expected: 11279171" )
 tests+=( "[ "$(echo 'SET @@max_length_for_sort_data = 501;SELECT p.p FROM (SELECT bookname,category, sum(cover_price) p from books group by bookname,category) p ORDER BY category LIMIT 1' | mysql bookstore)" == $FAIL_STRING ]" "Testing limited sort;. Expected: FAIL" )
