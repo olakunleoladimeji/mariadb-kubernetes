@@ -66,10 +66,10 @@ mariadb:
       replicas: 3
     um:
       replicas: 1
-    image: nastybuff/cs:latest
+    image: nastybuff/cs:1.2
 
     #For test purposes
     #The following parameters will be removed from the final setup
     test: true
-    sandbox: true
+    sandbox: null
     retries: 60 # 60x5=300sec - up to 5min 

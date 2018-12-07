@@ -17,8 +17,12 @@ currentDir=$(pwd)
 cd /tmp/bookstore-csv
 echo "Creating tables ..."
 sed -i 's/%DB%/bookstore/g'  /tmp/bookstore-csv/01_load_ax_init.sql
-
+"${mysql[@]}" bookstore -e "SET @@net_read_timeout=600;SET @@net_write_timeout=180"
 "${mysql[@]}" < /tmp/bookstore-csv/01_load_ax_init.sql
+if [ $? -ge 0 ]; then 
+  echo "Connection lost possibly reusing old PVC"
+  exit 1
+fi
 echo "Loading bookstore data ..."
 start=`date +%s`
 for i in *.mcs.csv.gz; do
