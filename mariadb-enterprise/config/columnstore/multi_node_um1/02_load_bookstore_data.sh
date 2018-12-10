@@ -17,10 +17,10 @@ currentDir=$(pwd)
 cd /tmp/bookstore-csv
 echo "Creating tables ..."
 sed -i 's/%DB%/bookstore/g'  /tmp/bookstore-csv/01_load_ax_init.sql
-"${mysql[@]}" bookstore -e "SET @@net_read_timeout=600;SET @@net_write_timeout=180"
+
 "${mysql[@]}" < /tmp/bookstore-csv/01_load_ax_init.sql
-if [ $? -ge 0 ]; then 
-  echo "Connection lost possibly reusing old PVC"
+if [ $? -gt 0 ]; then 
+  echo "Problem creating columnstore tables. Possible cause reusing old PVC."
   exit 1
 fi
 echo "Loading bookstore data ..."
@@ -34,7 +34,7 @@ done
 for i in *.inno.csv.gz; do
     gunzip $i
     table=$(echo $i | cut -f 1 -d '.')
-    "${mysql[@]}" < /tmp/bookstore-csv/01_load_ax_init.sql bookstore -e "load data local infile '$table.inno.csv' into table bookstore.$table fields terminated by ',' enclosed by '''';"
+    "${mysql[@]}" bookstore -e "load data local infile '$table.inno.csv' into table bookstore.$table fields terminated by ',' enclosed by '''';"
     rm -f $table.inno.csv.gz
 done
 end=`date +%s`

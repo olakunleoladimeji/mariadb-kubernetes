@@ -280,11 +280,7 @@ else
         elif [[ $f == *.sh ]]; then
             chmod 755 $f
             echo "Run $f at $(date)"
-            if [ -z $MARIADB_CS_DEBUG ]; then
                 /bin/sh $f 2>&1
-            else
-                /bin/sh -x $f 2>&1
-            fi
             if [ 1 -eq $? ]; then
                 echo "Script $f failed, aborting setup"
                 exit 1

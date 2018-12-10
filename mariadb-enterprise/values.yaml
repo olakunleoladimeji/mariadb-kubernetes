@@ -62,14 +62,29 @@ mariadb:
 
 # columnstore cluster parameters
   columnstore:
+    image: nastybuff/cs:1.2
     pm:
       replicas: 3
+      # We want to handle configurations of UM and PM separately
+      # resources:
+      #   requests:
+      #     cpu: null                                # e.g. "1000m"
+      #     memory: null                             # e.g. "3G"
+      #   limits:
+      #     cpu: null                                # e.g. "3000m"
+      #     memory: null
     um:
       replicas: 1
-    image: nastybuff/cs:1.2
-
-    #For test purposes
+      # We want to handle configurations of UM and PM separately 
+      # resources:
+      #   requests:
+      #     cpu: null                                # e.g. "1000m"
+      #     memory: null                             # e.g. "3G"
+      #   limits:
+      #     cpu: null                                # e.g. "3000m"
+      #     memory: null
+      
     #The following parameters will be removed from the final setup
     test: true
-    sandbox: null
+    sandbox: true
     retries: 60 # 60x5=300sec - up to 5min 
