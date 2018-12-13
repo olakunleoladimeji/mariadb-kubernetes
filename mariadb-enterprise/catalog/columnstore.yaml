@@ -29,8 +29,9 @@ spec:
   - name: mariadb
     port: {{ .Values.mariadb.server.port }}
     targetPort: {{ .Values.mariadb.server.port }}
+  clusterIP: None
   selector:
-    columnstore.um.mariadb: {{ .Release.Name }}
+    mariadb: {{ .Release.Name }}
 ---
 # a StatefulSet for the master/slave cluster
 apiVersion: apps/v1
