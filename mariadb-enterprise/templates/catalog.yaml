@@ -9,9 +9,13 @@
 ---
 {{ tpl (.Files.Get "catalog/mariadb-secret.yaml") . }}
 ---
+{{ if .Values.mariadb.columnstore.singlenode }}
+{{ tpl (.Files.Get "catalog/columnstore-single.yaml") . }}
+{{ else }}
 {{ tpl (.Files.Get "catalog/columnstore.yaml") . }}
 ---
 {{ tpl (.Files.Get "catalog/state-store.yaml") . }}
+{{ end }}
 {{ else if eq .Values.mariadb.cluster.topology "masterslave" }}
 {{ tpl (.Files.Get "catalog/mariadb-config.yaml") . }}
 ---

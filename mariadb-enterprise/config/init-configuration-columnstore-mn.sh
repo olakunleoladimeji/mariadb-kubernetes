@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright (C) 2018, MariaDB Corporation
 #
 # This script customizes templates based on the parameters passed to a command-line tool
@@ -20,7 +20,7 @@ REPL_PWD=$(cat /mnt/secrets/repl-password)
 DB_HOST="$(hostname -f | cut -d '.' -f 1).$(hostname -f | cut -d '.' -f 2)"
 UM_COUNT={{ .Values.mariadb.columnstore.um.replicas }}
 PM_COUNT={{ .Values.mariadb.columnstore.pm.replicas }}
-MARIADB_CS_DEBUG=$(check_true {{ .Values.mariadb.debug }})
+export MARIADB_CS_DEBUG=$(check_true {{ .Values.mariadb.debug }})
 RELEASE_NAME={{ .Release.Name }}
 #Get last digit of the hostname
 MY_HOSTNAME=$(hostname)
@@ -60,8 +60,8 @@ if [[ "$MARIADB_CS_NODE" == "UM" && -f "/mnt/config-map/master" ]]; then
 fi
 
 expand_templates /mnt/config-template/start-mariadb-instance.sh >> /mnt/config-map/start-mariadb-instance.sh
-expand_templates /mnt/config-template/liveness.sh >> /mnt/config-map/liveness.sh
-expand_templates /mnt/config-template/readiness.sh >> /mnt/config-map/readiness.sh
+# expand_templates /mnt/config-template/liveness.sh >> /mnt/config-map/liveness.sh
+# expand_templates /mnt/config-template/readiness.sh >> /mnt/config-map/readiness.sh
 
 if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
     if [ ! -z $MARIADB_CS_DEBUG ]; then

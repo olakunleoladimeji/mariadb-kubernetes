@@ -12,16 +12,20 @@ metadata:
 data:
   init-configurations.sh: |
 {{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
+{{- if .Values.mariadb.columnstore.singlenode }}
+{{ tpl (.Files.Get "config/init-configuration-columnstore-sn.sh") . | indent 4 }}
+{{- else }}
 {{ tpl (.Files.Get "config/init-configuration-columnstore-mn.sh") . | indent 4 }}
+{{- end }}
 {{- else }}
 {{ tpl (.Files.Get "config/init-configurations.sh") . | indent 4 }}
 {{- end }}
 
 {{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
-  liveness.sh: |
-{{ tpl (.Files.Get "config/columnstore/liveness.sh") . | indent 4 }}
-  readiness.sh: |
-{{ tpl (.Files.Get "config/columnstore/readiness.sh") . | indent 4 }}
+{{- if eq .Values.mariadb.columnstore.singlenode true }}
+  init_singlenode.sh: |
+{{ tpl (.Files.Get "config/columnstore/init_singlenode.sh") . | indent 4 }}
+{{ else }}
   init_um_master.sh: |
 {{ tpl (.Files.Get "config/columnstore/init_um_master.sh") . | indent 4 }}
   init_um_slave.sh: |
@@ -34,6 +38,7 @@ data:
 {{ tpl (.Files.Get "config/columnstore/init_pm.sh") . | indent 4 }}
   init_pm_postconf.sh: |
 {{ tpl (.Files.Get "config/columnstore/init_pm_postconf.sh") . | indent 4 }}
+{{- end }}
 {{- if .Values.mariadb.columnstore.test}}
   test_cs.sh: |
 {{ tpl (.Files.Get "tests/cs/test_cs.sh") . | indent 4 }}
@@ -47,12 +52,14 @@ data:
 {{- end }}
   start-mariadb-instance.sh: |
 {{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
+{{- if .Values.mariadb.columnstore.singlenode }}
+{{ tpl (.Files.Get "config/start-mariadb-instance-columnstore-sn.sh") . | indent 4 }}
+{{- else }}
 {{ tpl (.Files.Get "config/start-mariadb-instance-columnstore-mn.sh") . | indent 4 }}
+{{- end }}
 {{- else }}
 {{ tpl (.Files.Get "config/init-start-mariadb-instance.sh") . | indent 4 }}
 {{- end }}
-
-
   users.sql: |
 {{ tpl (.Files.Get "config/users.sql") . | indent 4 }}
 
