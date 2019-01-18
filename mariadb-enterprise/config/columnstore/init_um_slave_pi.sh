@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 if [ ! -z $MARIADB_CS_DEBUG ]; then
     #set +x
     echo '------------------------------'

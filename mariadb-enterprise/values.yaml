@@ -62,6 +62,7 @@ mariadb:
 
 # columnstore cluster parameters
   columnstore:
+    singlenode: true
     image: nastybuff/cs:1.2
     pm:
       replicas: 3

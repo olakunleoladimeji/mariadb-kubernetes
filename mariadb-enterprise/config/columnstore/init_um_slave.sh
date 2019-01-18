@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright (C) 2018, MariaDB Corporation
 
 # file used to track / record initialization and prevent subsequent rerun

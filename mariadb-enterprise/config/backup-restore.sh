@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 DATADIR="$(_get_config 'datadir' "$@")"
 # clean the target dir
 rm -rf $DATADIR/*

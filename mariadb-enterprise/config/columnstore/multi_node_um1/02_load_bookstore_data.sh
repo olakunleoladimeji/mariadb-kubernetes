@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 mkdir -p /tmp/bookstore-csv
 MCSDIR=/usr/local/mariadb/columnstore
 mysql=( $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot )

@@ -19,13 +19,12 @@ CONT_INDEX=${SPLIT_HOST[(${#SPLIT_HOST[@]}-1)]}
 MY_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
 
 if [ ! -z $MARIADB_CS_DEBUG ]; then
-    #set +x
-    
+    set +x
     echo '-------------------------'
     echo 'Start CS Module Container'
     echo '-------------------------'
     echo 'IP:'$MY_IP
-    #set -x
+    set -x
 fi
 
 PREFIX_REPLICATION="2\n1\nn\ny\ncolumnstore-1\n1\n" 

@@ -1,0 +1,178 @@
+# Copyright (C) 2018, MariaDB Corporation
+#
+# Defines a columnstore configuration in a StatefulSet behind
+# a headless service. 
+
+# Allows scaling the number of server instances
+# by using:
+# kubectl scale sts <label>-mdb-clust --replicas=<number of server instances>
+
+# Headless service for stable DNS entries for StatefulSet members
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-mdb-clust
+  labels:
+    mariadb: {{ .Release.Name }}
+    entrypoint.mariadb: {{ .Release.Name }}
+    {{- if .Values.mariadb.cluster.id }}
+    id.mariadb: "{{ .Values.mariadb.cluster.id }}"
+    {{- end }}
+    {{- if .Values.mariadb.cluster.labels }}
+{{ toYaml .Values.mariadb.cluster.labels | indent 4 }}
+    {{- end }}
+    {{- if .Values.mariadb.server.labels }}
+{{ toYaml .Values.mariadb.server.labels | indent 4 }}
+    {{- end }}
+spec:
+  ports:
+  - name: mariadb
+    port: {{ .Values.mariadb.server.port }}
+    targetPort: {{ .Values.mariadb.server.port }}
+  clusterIP: None
+  selector:
+    mariadb: {{ .Release.Name }}
+---
+# a StatefulSet for the master/slave cluster
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-mdb-cs-single
+  labels:
+    mariadb: {{ .Release.Name }}
+    {{- if .Values.mariadb.cluster.id }}
+    id.mariadb: "{{ .Values.mariadb.cluster.id }}"
+    {{- end }}
+    {{- if .Values.mariadb.cluster.labels }}
+{{ toYaml .Values.mariadb.cluster.labels | indent 4 }}
+    {{- end }}
+    {{- if .Values.mariadb.server.labels }}
+{{ toYaml .Values.mariadb.server.labels | indent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      mariadb: {{ .Release.Name }}
+  serviceName: {{ .Release.Name }}-mdb-clust
+  replicas: 1
+  template:
+    metadata:
+      {{- if or (.Values.mariadb.cluster.annotations) (.Values.mariadb.server.annotations) }}
+      annotations:
+      {{- end }}
+      {{- if .Values.mariadb.cluster.annotations }}
+{{ toYaml .Values.mariadb.cluster.annotations | indent 8 }}
+      {{- end }}
+      labels:
+        mariadb: {{ .Release.Name }}
+        {{- if .Values.mariadb.cluster.id }}
+        id.mariadb: {{ .Values.mariadb.cluster.id }}
+        {{- end }}
+    spec:
+      initContainers:
+      ## runs an initialization script to prepare the correct startup configuration
+      - name: init-columnstore
+        image: {{ .Values.mariadb.columnstore.image }}
+        command:
+          - bash
+          - /mnt/config-template/init-configurations.sh
+          - columnstore
+        env:
+          - name: BACKUP_CLAIM_NAME
+            value: {{ .Values.mariadb.server.backup.claimName }}
+          - name: CLUSTER_TOPOLOGY
+            value: {{ .Values.mariadb.cluster.topology }}
+        volumeMounts:
+          - mountPath: /mnt/secrets
+            name: mariadb-secrets-vol
+            readOnly: true
+          - mountPath: /docker-entrypoint-initdb.d
+            name: mariadb-entrypoint-vol
+          - mountPath: /mnt/config-template
+            name: mariadb-configtemplate-vol
+          - mountPath: /mnt/config-map
+            name: mariadb-config-vol
+      containers:
+#Columnstore Module
+      - name: columnstore-module-pm
+        image: {{ .Values.mariadb.columnstore.image }}
+        # start a mariadb instance
+        command:
+        - bash
+        - /mnt/config-map/start-mariadb-instance.sh
+        env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "Y"
+        - name: CLUSTER_TOPOLOGY
+          value: {{ .Values.mariadb.cluster.topology }}
+        ports:
+        - containerPort: 3306
+        {{- if or (.Values.mariadb.server.resources.limits.cpu) (.Values.mariadb.server.resources.limits.memory) (.Values.mariadb.server.resources.requests.cpu) (.Values.mariadb.server.resources.requests.memory) }}
+        resources:
+        {{- end }}
+          {{- if or (.Values.mariadb.server.resources.requests.cpu) (.Values.mariadb.server.resources.requests.memory) }}
+          requests:
+          {{- end }}
+            {{- if .Values.mariadb.server.resources.requests.cpu }}
+            cpu: {{ .Values.mariadb.server.resources.requests.cpu }}
+            {{- end }}
+            {{- if .Values.mariadb.server.resources.requests.memory }}
+            memory: {{ .Values.mariadb.server.resources.requests.memory }}
+            {{- end }}
+          {{- if or (.Values.mariadb.server.resources.limits.cpu) (.Values.mariadb.server.resources.limits.memory) }}
+          limits:
+          {{- end }}
+            {{- if .Values.mariadb.server.resources.limits.cpu }}
+            cpu: {{ .Values.mariadb.server.resources.limits.cpu }}
+            {{- end }}
+            {{- if .Values.mariadb.server.resources.limits.memory }}
+            memory: {{ .Values.mariadb.server.resources.limits.memory }}
+            {{- end }}
+        volumeMounts:
+        {{- if .Values.mariadb.server.backup.claimName }}
+        - name: backup-data-storage
+          mountPath: /backup
+        {{- end }}
+        - name: mariadb-entrypoint-vol
+          mountPath: /docker-entrypoint-initdb.d
+        - name: mariadb-config-vol
+          mountPath: /mnt/config-map
+        # a permanent volume for data storage
+        - name: data
+          mountPath: /usr/local/mariadb/columnstore/mysql/db
+          subPath: db
+      volumes:
+      {{- if .Values.mariadb.server.backup.claimName }}
+      - name: backup-data-storage
+        persistentVolumeClaim:
+          claimName: {{ .Values.mariadb.server.backup.claimName }}
+      {{- end }}
+      - name: mariadb-entrypoint-vol
+        emptyDir: {}
+      - name: mariadb-config-vol
+        emptyDir: {}
+      - name: mariadb-configtemplate-vol
+        configMap:
+          name: {{ .Release.Name }}-mariadb-config
+      - name: mariadb-secrets-vol
+        secret:
+          secretName: {{ .Release.Name }}-mariadb-secret
+
+  # ensures persistent volumes end up on the same pod
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        mariadb: {{ .Release.Name }}
+        storage.mariadb: {{ .Release.Name }}
+        {{- if .Values.mariadb.cluster.id }}
+        id.mariadb: "{{ .Values.mariadb.cluster.id }}"
+        {{- end }}
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: {{ .Values.mariadb.server.storage.size }}
+      {{- if .Values.mariadb.server.storage.class }}
+      storageClassName: {{ .Values.mariadb.server.storage.class }}
+      {{- end }}
