@@ -33,6 +33,32 @@ spec:
   selector:
     mariadb: {{ .Release.Name }}
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stableip-pm-pod-0
+spec:
+  ports:
+    - port: 3306
+      name: mariadb
+    - port: 22
+      name: ssh
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ .Release.Name }}-mdb-cs-pm-module-0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stableip-um-pod-0
+spec:
+  ports:
+    - port: 3306
+      name: mariadb
+    - port: 22
+      name: ssh
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ .Release.Name }}-mdb-cs-pm-module-0
+---
 # a StatefulSet for the master/slave cluster
 apiVersion: apps/v1
 kind: StatefulSet
