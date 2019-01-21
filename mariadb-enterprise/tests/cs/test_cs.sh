@@ -58,12 +58,12 @@ mysql() {
     fi
 }
 if [ ! -z $MARIADB_CS_DEBUG ]; then
-    set +x
+    #set +x
     echo '-------------------------'
     echo 'Running test sute'
     echo '-------------------------'
     echo 'IP:'$MY_IP
-    set -x
+    #set -x
 fi
 if [ ! -z $MARIADB_CS_DEBUG ]; then
     $MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf -uroot < ./initdb.sql -v

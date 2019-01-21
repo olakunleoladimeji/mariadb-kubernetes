@@ -20,12 +20,12 @@ MY_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9
 MARIADB_CS_DEBUG=1
 
 if [ ! -z $MARIADB_CS_DEBUG ]; then
-    set +x
+    #set +x
     echo '-------------------------'
     echo 'Start CS Module Container'
     echo '-------------------------'
     echo 'IP:'$MY_IP
-    set -x
+    #set -x
 fi
 
 cp /mnt/config-map/02_load_bookstore_data.sh /docker-entrypoint-initdb.d/01_load_bookstore_data.sh

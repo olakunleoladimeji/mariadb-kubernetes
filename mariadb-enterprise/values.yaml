@@ -63,7 +63,7 @@ mariadb:
 # columnstore cluster parameters
   columnstore:
     singlenode: false
-    image: nastybuff/cs:1.2
+    image: nastybuff/cs:1.2.3
     pm:
       replicas: 3
       # We want to handle configurations of UM and PM separately

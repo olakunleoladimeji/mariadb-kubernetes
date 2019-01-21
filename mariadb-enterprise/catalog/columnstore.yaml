@@ -33,10 +33,12 @@ spec:
   selector:
     mariadb: {{ .Release.Name }}
 ---
+{{- $root := . -}}
+{{- range $pod_num, $e := until ( .Values.mariadb.columnstore.um.replicas | int) -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: stableip-pm-pod-0
+  name: {{ $root.Release.Name }}-stableip-um-{{ $pod_num}}
 spec:
   ports:
     - port: 3306
@@ -44,12 +46,14 @@ spec:
     - port: 22
       name: ssh
   selector:
-    statefulset.kubernetes.io/pod-name: {{ .Release.Name }}-mdb-cs-pm-module-0
+    statefulset.kubernetes.io/pod-name: {{ $root.Release.Name }}-mdb-cs-um-module-{{$pod_num}}
 ---
+{{- end -}}
+{{- range $pod_num, $e := until ( .Values.mariadb.columnstore.pm.replicas |int) -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: stableip-um-pod-0
+  name: {{ $root.Release.Name }}-stableip-pm-{{ $pod_num}}
 spec:
   ports:
     - port: 3306
@@ -57,8 +61,9 @@ spec:
     - port: 22
       name: ssh
   selector:
-    statefulset.kubernetes.io/pod-name: {{ .Release.Name }}-mdb-cs-pm-module-0
+    statefulset.kubernetes.io/pod-name: {{ $root.Release.Name }}-mdb-cs-pm-module-{{$pod_num}}
 ---
+{{- end -}}
 # a StatefulSet for the master/slave cluster
 apiVersion: apps/v1
 kind: StatefulSet

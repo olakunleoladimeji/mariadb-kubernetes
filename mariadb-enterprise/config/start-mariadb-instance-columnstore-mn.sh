@@ -19,12 +19,12 @@ CONT_INDEX=${SPLIT_HOST[(${#SPLIT_HOST[@]}-1)]}
 MY_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
 
 if [ ! -z $MARIADB_CS_DEBUG ]; then
-    set +x
+    #set +x
     echo '-------------------------'
     echo 'Start CS Module Container'
     echo '-------------------------'
     echo 'IP:'$MY_IP
-    set -x
+    #set -x
 fi
 
 PREFIX_REPLICATION="2\n1\nn\ny\ncolumnstore-1\n1\n" 
@@ -35,13 +35,18 @@ UM_COUNT={{ .Values.mariadb.columnstore.um.replicas }}
 PM_COUNT={{ .Values.mariadb.columnstore.pm.replicas }}
 UM_HOST="$RELEASE_NAME-mdb-cs-um-module-"
 PM_HOST="$RELEASE_NAME-mdb-cs-pm-module-"
+UM_SERVICE="$RELEASE_NAME-stableip-um-"
+PM_SERVICE="$RELEASE_NAME-stableip-pm-"
+
 
 function ping_hosts() { 
     RET_CD=0
+    #TODO: ping -c 1 $UM_SERVICE$i soes not work - 
+    #find a way to check if services are up (kubectl svc probbaly)
     for i in `seq 0 $(( UM_COUNT-1 ))`
     do
         if [ ! -z $MARIADB_CS_DEBUG ]; then
-            ping -c 1 $UM_HOST$i.$CS_SERVICE 2>&1 >/dev/null
+            ping -c 1 $UM_HOST$i.$CS_SERVICE  2>&1 >/dev/null
         else
             ping -c 1 $UM_HOST$i.$CS_SERVICE >/dev/null 2>&1 >/dev/null
         fi
@@ -92,6 +97,23 @@ function build_post_config_input() {
     do
         IP=$(get_IP_from_ping $PM_HOST$i.$CS_SERVICE)
         MODULES="$MODULES$PM_HOST$i.$CS_SERVICE\n$IP\n\n$(( i+1 ))\n"
+    done
+    echo "$PREFIX$MODULES"
+}
+
+function build_post_config_input_services() { 
+    MODULES=""
+    MODULES="$MODULES$UM_COUNT\n"
+    for i in `seq 0 $(( UM_COUNT-1 ))`
+    do
+        IP=$(get_IP_from_ping $UM_SERVICE$i)
+        MODULES="$MODULES$UM_SERVICE$i\n\n1\n"
+    done
+    MODULES="$MODULES$PM_COUNT\n"
+    for i in `seq 0 $(( PM_COUNT-1 ))`
+    do
+        IP=$(get_IP_from_ping $PM_SERVICE$i)
+        MODULES="$MODULES$PM_SERVICE$i\n\n1\n$(( i+1 ))\n"
     done
     echo "$PREFIX$MODULES"
 }
@@ -159,7 +181,8 @@ if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
             echo "Starting postConfiguration"
             fi
             wait_ping_hosts
-            MARIADB_CS_POSTCFG_INPUT=$(build_post_config_input)
+            MARIADB_CS_POSTCFG_INPUT=$(build_post_config_input_services)
+            echo">>>>>>>>>>>>$MARIADB_CS_POSTCFG_INPUT<<<<<<<<<<<<<<<<<"
             if [ ! -z $MARIADB_CS_DEBUG ]; then
                 echo $PING_DEBUG
                 echo $MARIADB_CS_POSTCFG_INPUT
