@@ -10,7 +10,7 @@ function check_true(){
         echo 1
     fi
 }
-
+set -x
 # APPLICATION=$(hostname -f | cut -d '.' -f 2 | cut -d '-' -f 1)
 # ENVIRONMENT=$(hostname -f | cut -d '.' -f 2 | cut -d '-' -f 2)
 ADMIN_USER=$(cat /mnt/secrets/admin-username)

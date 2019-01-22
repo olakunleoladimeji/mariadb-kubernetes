@@ -10,14 +10,13 @@ REPLICATION_USERNAME="<<REPLICATION_USERNAME>>"
 REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
 RELEASE_NAME="<<RELEASE_NAME>>"
 CLUSTER_ID="<<CLUSTER_ID>>"
-MARIADB_CS_DEBUG="<<MARIADB_CS_DEBUG>>"
+export MARIADB_CS_DEBUG="<<MARIADB_CS_DEBUG>>"
 export MAX_TRIES=60
 #Get last digit of the hostname
 MY_HOSTNAME=$(hostname)
 SPLIT_HOST=(${MY_HOSTNAME//-/ }); 
 CONT_INDEX=${SPLIT_HOST[(${#SPLIT_HOST[@]}-1)]}
 MY_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
-MARIADB_CS_DEBUG=1
 
 if [ ! -z $MARIADB_CS_DEBUG ]; then
     #set +x

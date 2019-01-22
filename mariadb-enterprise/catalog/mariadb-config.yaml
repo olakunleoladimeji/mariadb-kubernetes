@@ -12,7 +12,7 @@ metadata:
 data:
   init-configurations.sh: |
 {{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
-{{- if .Values.mariadb.columnstore.singlenode }}
+{{- if .Values.mariadb.columnstore.singlenodeCombined }}
 {{ tpl (.Files.Get "config/init-configuration-columnstore-sn.sh") . | indent 4 }}
 {{- else }}
 {{ tpl (.Files.Get "config/init-configuration-columnstore-mn.sh") . | indent 4 }}
@@ -22,7 +22,7 @@ data:
 {{- end }}
 
 {{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
-{{- if eq .Values.mariadb.columnstore.singlenode true }}
+{{- if eq .Values.mariadb.columnstore.singlenodeCombined true }}
   init_singlenode.sh: |
 {{ tpl (.Files.Get "config/columnstore/init_singlenode.sh") . | indent 4 }}
 {{ else }}
@@ -52,10 +52,14 @@ data:
 {{- end }}
   start-mariadb-instance.sh: |
 {{- if or (eq .Values.mariadb.cluster.topology "columnstore") }}
-{{- if .Values.mariadb.columnstore.singlenode }}
+{{- if .Values.mariadb.columnstore.singlenodeCombined }}
 {{ tpl (.Files.Get "config/start-mariadb-instance-columnstore-sn.sh") . | indent 4 }}
 {{- else }}
+{{- if .Values.mariadb.columnstore.stableIpServices -}}
+{{ tpl (.Files.Get "config/start-mariadb-instance-columnstore-mn-stable-ip.sh") . | indent 4 }}
+{{- else -}}
 {{ tpl (.Files.Get "config/start-mariadb-instance-columnstore-mn.sh") . | indent 4 }}
+{{- end -}}
 {{- end }}
 {{- else }}
 {{ tpl (.Files.Get "config/init-start-mariadb-instance.sh") . | indent 4 }}
