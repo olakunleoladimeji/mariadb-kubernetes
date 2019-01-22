@@ -73,7 +73,8 @@ mariadb:
 
 # columnstore cluster parameters
   columnstore:
-    singlenode: false
+    singlenodeCombined: false
+    stableIpServices: false
     image: nastybuff/cs:1.2.3
     pm:
       replicas: 3
@@ -99,4 +100,4 @@ mariadb:
     #The following parameters will be removed from the final setup
     test: true
     sandbox: true
-    retries: 60 # 60x5=300sec - up to 5min 
+    retries: 60 # 60x5=300sec - up to 5min

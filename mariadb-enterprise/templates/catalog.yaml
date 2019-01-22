@@ -9,7 +9,11 @@
 ---
 {{ tpl (.Files.Get "catalog/mariadb-secret.yaml") . }}
 ---
-{{ if .Values.mariadb.columnstore.singlenode }}
+{{- if .Values.mariadb.columnstore.stableIpServices -}}
+{{- tpl (.Files.Get "catalog/stable_ip_service_um.yaml") . -}}
+{{- tpl (.Files.Get "catalog/stable_ip_service_pm.yaml") . -}}
+{{- end -}}
+{{ if .Values.mariadb.columnstore.singlenodeCombined }}
 {{ tpl (.Files.Get "catalog/columnstore-single.yaml") . }}
 {{ else }}
 {{ tpl (.Files.Get "catalog/columnstore.yaml") . }}

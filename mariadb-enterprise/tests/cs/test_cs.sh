@@ -27,7 +27,9 @@ start_tst()
     done
     if [[ $FAILED -gt 0 ]]; then
         echo "$FAILED failed tests."
-        exit 1
+        if [ -z $MARIADB_CS_DEBUG ]; then
+            exit 1
+        fi
     fi
 }
 
@@ -46,9 +48,11 @@ echo "Running tests"
 FAIL_STRING="@@failure@@"
 mysql() {
     res=$($MCSDIR/mysql/bin/mysql --defaults-extra-file=$MCSDIR/mysql/my.cnf \
+    --host="$MARIADB_HOST" \
     --user=''"${MARIADB_USER}"'' \
     --password=''"${MARIADB_PASSWORD}"''  \
     --silent \
+    --protocol=TCP \
     ''"$1"'' \
     -e "$2" )
     if [ $? -eq 0 ]; then
@@ -60,7 +64,7 @@ mysql() {
 if [ ! -z $MARIADB_CS_DEBUG ]; then
     #set +x
     echo '-------------------------'
-    echo 'Running test sute'
+    echo 'Running test suite'
     echo '-------------------------'
     echo 'IP:'$MY_IP
     #set -x
@@ -101,3 +105,15 @@ tests+=( "[ \$(mysql \"$MARIADB_DATABASE\" 'SET @@max_length_for_sort_data = 500
 #tests+=( "[ \$(docker exec -i $cname_um1 wc -l /var/log/mariadb/columnstore/info.log | cut -d ' ' -f 1) -gt 0 ]" "Testing log at /var/log/mariadb/columnstore/info.log. Expected: some rows" )
 {{- end}}
 start_tst tests[@] 3
+
+
+if [ ! -z $MARIADB_CS_DEBUG ]; then
+    TEST_TIMOUT=15
+    while true; do 
+    echo ""
+    echo "Repeat test in $TEST_TIMOUT ...."
+    echo ""
+    sleep $TEST_TIMOUT
+    start_tst tests[@] 3
+    done
+fi
