@@ -43,8 +43,8 @@ MY_HOSTNAME=$(hostname)
 SPLIT_HOST=(${MY_HOSTNAME//-/ }); 
 CONT_INDEX=${SPLIT_HOST[(${#SPLIT_HOST[@]}-1)]}
 MARIADB_CS_USE_FQDN=1
-MARIADB_CS_NUM_BLOCKS_PCT=
-MARIADB_CS_TOTAL_UM_MEMORY=
+MARIADB_CS_NUM_BLOCKS_PCT={{ .Values.mariadb.columnstore.numBlocksPct}}
+MARIADB_CS_TOTAL_UM_MEMORY={{ .Values.mariadb.columnstore.totalUmMemory }}
 MY_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
 
 function expand_templates() {
