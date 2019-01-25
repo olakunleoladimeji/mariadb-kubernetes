@@ -113,7 +113,10 @@ if [ ! -z $MARIADB_CS_DEBUG ]; then
     echo ""
     echo "Repeat test in $TEST_TIMOUT ...."
     echo ""
+    
     sleep $TEST_TIMOUT
+    $MCSDIR/bin/mcsadmin getSoftwareInfo
+    $MCSDIR/bin/mcsadmin getSystemMemory
     start_tst tests[@] 3
     done
 fi

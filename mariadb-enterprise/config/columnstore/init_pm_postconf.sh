@@ -11,6 +11,9 @@ REPLICATION_PASSWORD="<<REPLICATION_PASSWORD>>"
 RELEASE_NAME="<<RELEASE_NAME>>"
 CLUSTER_ID="<<CLUSTER_ID>>"
 MARIADB_CS_DEBUG="<<MARIADB_CS_DEBUG>>"
+MARIADB_CS_USE_FQDN="<<MARIADB_CS_USE_FQDN>>"
+MARIADB_CS_NUM_BLOCKS_PCT="<<MARIADB_CS_NUM_BLOCKS_PCT>>"
+MARIADB_CS_TOTAL_UM_MEMORY="<<MARIADB_CS_TOTAL_UM_MEMORY>>"
 
 MCSDIR=/usr/local/mariadb/columnstore
 # file used to track / record initialization and prevent subsequent rerun
@@ -62,6 +65,21 @@ if [ -e $FLAG ]; then
     echo "Container already initialized at $(date)"
     exit 0
 fi
+# build the postConfigure command line parameter
+if [ ! -z "$MARIADB_CS_USE_FQDN" ]; then
+    postConfigureParameter="$postConfigureParameter -x"
+fi
+if [ ! -z "$MARIADB_CS_NUM_BLOCKS_PCT" ]; then
+    postConfigureParameter="$postConfigureParameter -numBlocksPct $MARIADB_CS_NUM_BLOCKS_PCT"
+fi
+if [ ! -z "$MARIADB_CS_TOTAL_UM_MEMORY" ]; then
+    postConfigureParameter="$postConfigureParameter -totalUmMemory $MARIADB_CS_TOTAL_UM_MEMORY"
+fi
+
+echo "Stopping columnstore service to run postConfigure"
+/usr/sbin/sv stop columnstore
+echo $MCSDIR/bin/postConfigure -n $postConfigureParameter1
+
 
 # wait for ProcMon to startup
 echo "Initializing container at $(date) - waiting for ProcMon to start"
@@ -70,7 +88,7 @@ wait_for_procmon
 echo "Stopping columnstore service to run postConfigure"
 /usr/sbin/sv stop columnstore
 
-echo -e "$MARIADB_CS_POSTCFG_INPUT" | $MCSDIR/bin/postConfigure -n
+echo -e "$MARIADB_CS_POSTCFG_INPUT" | $MCSDIR/bin/postConfigure -n -x
 
 echo "Container initialization complete at $(date)"
 touch $FLAG
