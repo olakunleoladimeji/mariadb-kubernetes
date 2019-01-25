@@ -3,6 +3,24 @@
 #
 # This script customizes templates based on the parameters passed to a command-line tool
 # the path to the target directory needs to be passed as first argument
+#
+#
+#The following environment variables can be utilized to configure behavior:
+# MARIADB_ROOT_PASSWORD : specify the password for the root user
+# MARIADB_ALLOW_EMPTY_PASSWORD : allow empty password for the root user
+# MARIADB_RANDOM_ROOT_PASSWORD : generate a random password for the root user (output to logs). Note: This option takes precedence over MARIADB_ROOT_PASSWORD.
+# MARIADB_INITDB_SKIP_TZINFO : skip timezone setup
+# MARIADB_ROOT_HOST : host for root user, defaults to '%'
+# MARIADB_DATABASE : create a database with this name
+# MARIADB_USER : create a user with this name, with all privileges on MARIADB_DATABASE if specified
+# MARIADB_PASSWORD : password for above user
+# MARIADB_CS_POSTCFG_INPUT : override input values for postConfigure. The default value in the Dockerfile will start up a single server deployment. If the environment variable is empty then postConfigure will not be run and the container will just run the ColumnStore service process ProcMon.
+# MARIADB_CS_NUM_BLOCKS_PCT - If set uses this amount of physical memory to utilize for disk block caching. Explicit amounts need to be suffixed with M or G. Will override the default setting of 1024M from Dockerfile.
+# MARIADB_CS_TOTAL_UM_MEMORY - If set uses this amount of physical memory to utilize for joins, intermediate results and set operations on the UM. Explicit amounts need to be suffixed with M or G. Will override the default setting of 256M from Dockerfile.
+# MARIADB_DROP_LOCAL_USERS : Drop anonymous local users, useful for removing this on non um1 um containers.
+
+
+
 function check_true(){
     if [ ! "$1" == "True" ] && [ ! "$1" == "true" ] && [ ! "$1" == "1" ]; then
         echo ""
@@ -34,6 +52,9 @@ function expand_templates() {
         -e "s/<<RELEASE_NAME>>/${RELEASE_NAME}/g" \
         -e "s/<<CLUSTER_ID>>/${CLUSTER_ID}/g" \
         -e "s/<<MARIADB_CS_DEBUG>>/${MARIADB_CS_DEBUG}/g" \
+        -e "s/<<MARIADB_CS_USE_FQDN>>/${MARIADB_CS_USE_FQDN}/g" \
+        -e "s/<<MARIADB_CS_NUM_BLOCKS_PCT>>/${MARIADB_CS_NUM_BLOCKS_PCT}/g" \
+        -e "s/<<MARIADB_CS_TOTAL_UM_MEMORY>>/${MARIADB_CS_TOTAL_UM_MEMORY}/g" \
         $1
 }
 
