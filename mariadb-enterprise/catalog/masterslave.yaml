@@ -79,10 +79,10 @@ spec:
         args: ["-c", "cd /root; node ./client.js mariadb-init {{ .Release.Name }}-mdb-state /mnt/config-map"]
         imagePullPolicy: IfNotPresent
         volumeMounts:
-          - mountPath: /mnt/config-map
-            name: mariadb-config-vol
-          - mountPath: /mnt/config-template
-            name: mariadb-configtemplate-vol
+          - name: mariadb-config-vol
+            mountPath: /mnt/config-map
+          - name: mariadb-configtemplate-vol
+            mountPath: /mnt/config-template
 
       # runs an initialization script to prepare the correct startup configuration
       - name: init-masterslave
@@ -97,18 +97,20 @@ spec:
         - name: CLUSTER_TOPOLOGY
           value: {{ .Values.mariadb.cluster.topology }}
         volumeMounts:
-          - mountPath: /mnt/secrets
-            name: mariadb-secrets-vol
+          - name: mariadb-secrets-vol
+            mountPath: /mnt/secrets
             readOnly: true
           - name: mariadb-entrypoint-vol
             mountPath: /docker-entrypoint-initdb.d
-          - mountPath: /mnt/config-template
-            name: mariadb-configtemplate-vol
-          - mountPath: /mnt/config-map
-            name: mariadb-config-vol
+          - name: mariadb-configtemplate-vol
+            mountPath: /mnt/config-template
+          - name: mariadb-config-vol
+            mountPath: /mnt/config-map
 
       containers:
-      - command:
+      - name: mariadb-server
+        image: {{ .Values.mariadb.server.image }}
+        command:
         # start a mariadb instance
         - bash
         - /mnt/config-map/start-mariadb-instance.sh
@@ -119,8 +121,6 @@ spec:
           value: {{ .Values.mariadb.server.backup.restoreFrom }}
         - name: CLUSTER_TOPOLOGY
           value: {{ .Values.mariadb.cluster.topology }}
-        image: {{ .Values.mariadb.server.image }}
-        name: mariadb-server
         ports:
         - containerPort: 3306
         {{- if or (.Values.mariadb.server.resources.limits.cpu) (.Values.mariadb.server.resources.limits.memory) (.Values.mariadb.server.resources.requests.cpu) (.Values.mariadb.server.resources.requests.memory) }}
@@ -178,8 +178,8 @@ spec:
         args: ["-c", "cd /root; node ./client.js mariadb {{ .Release.Name }}-mdb-state /mnt/config-map"]
         imagePullPolicy: IfNotPresent
         volumeMounts:
-          - mountPath: /mnt/config-template
-            name: mariadb-configtemplate-vol
+          - name: mariadb-configtemplate-vol
+            mountPath: /mnt/config-template
 
       restartPolicy: Always
 
