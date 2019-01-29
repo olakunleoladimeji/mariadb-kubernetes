@@ -171,25 +171,37 @@ helm list
 
 To remove a helm release:
 
-```sh
-helm delete <id>
-```
+- if just you want to delete the cluster (You can't use the same cluster `<id>` in the future)
+
+  ```sh
+  helm delete <id>
+  ```
+
+- if you want to delete the cluster and delete it's name from the Helm cache (this will allow you to reuse the same `<id>` again)
+
+  ```sh
+  helm delete <id> --purge
+  ```
 
 The cluster topology can be specified by changing the `mariadb.cluster.topology` value in the `values.yaml` file or directly overriding it when running the `helm` command:
 
-```sh
-helm install . --name <id> --set mariadb.cluster.topology=masterslave
-```
+- with NFS connection (allows to perform backup in the future)
+
+  ```sh
+  helm install . --name <id> --set mariadb.cluster.topology=masterslave --set mariadb.server.backup.nfs.server=<NFS_SERVER_IP>
+  ```
+
+- without NFS connection (the build in backup functionality can't be used)
+
+  ```sh
+  helm install . --name <id> --set mariadb.cluster.topology=masterslave
+  ```
 
 Possible values are `masterslave`, `standalone` and `galera`. Default is `masterslave`.  
 Any value in the `values.yaml` file can be overridden this way.  
-If you also want to connect to an NFS server in order to be able to make backups in the future, run:
-
-```sh
-helm install . --name <id> --set mariadb.cluster.topology=masterslave --set mariadb.server.backup.nfs.server=<NFS_SERVER_IP>
-```
 
 ## Parameterization
+
 The following list of parameters can be used with the helm chart by either modifying the file `values.xml` or through the command line switch `--set <parameter name>=<value>`:
 
 | Parameter                                  | Default                  | Description                                                                                                         |
@@ -202,7 +214,7 @@ The following list of parameters can be used with the helm chart by either modif
 | _Server instances_                         |                          |                                                                                                                     |
 | mariadb.server.users.admin.username        | admin                    | MariaDB admin user                                                                                                  |
 | mariadb.server.users.admin.password        | 5LVTpbGE2cGFtw69         | MariaDB admin password                                                                                              |
-| mariadb.server.users.replication.username  | repl                     | Replcation user name                                                                                                |
+| mariadb.server.users.replication.username  | repl                     | Replication user name                                                                                                |
 | mariadb.server.users.replication.password  | 5LVTpbGE2cGFtw69         | Replication user password                                                                                           |
 | mariadb.server.storage.class               | null                     | Storage class specification of data volume                                                                          |
 | mariadb.server.storage.size                | 256Mi                    | Size of data volume                                                                                                 |
