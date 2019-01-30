@@ -157,10 +157,10 @@ You can then find the NFS server's IP by running
 
 ### Installing the Cluster with Helm
 
-Helm provides a simple means of installation and is the *recommended* approach. To install the cluster simply run specifying a unique id which is used as the release name as well as name prefix for other objects:
+Helm provides a simple means of installation and is the *recommended* approach. To install the cluster, run the below command, specifying your own unique release name (<release-name>). The <release-name> is also used as a prefix for all objects in Kubernetes related to the installed release:
 
 ```sh
-helm install . --name <id>
+helm install . --name <release-name>
 ```
 
 To review installed releases:
@@ -171,16 +171,16 @@ helm list
 
 To remove a helm release:
 
-- if just you want to delete the cluster (You can't use the same cluster `<id>` in the future)
+- if just you want to delete the cluster (You can't use the same cluster `<release-name>` in the future)
 
   ```sh
-  helm delete <id>
+  helm delete <release-name>
   ```
 
-- if you want to delete the cluster and delete it's name from the Helm cache (this will allow you to reuse the same `<id>` again)
+- if you want to delete the cluster and delete it's name from the Helm cache (this will allow you to reuse the same `<release-name>` again)
 
   ```sh
-  helm delete <id> --purge
+  helm delete <release-name> --purge
   ```
 
 The cluster topology can be specified by changing the `mariadb.cluster.topology` value in the `values.yaml` file or directly overriding it when running the `helm` command:
@@ -188,13 +188,13 @@ The cluster topology can be specified by changing the `mariadb.cluster.topology`
 - with NFS connection (allows to perform backup in the future)
 
   ```sh
-  helm install . --name <id> --set mariadb.cluster.topology=masterslave --set mariadb.server.backup.nfs.server=<NFS_SERVER_IP>
+  helm install . --name <release-name> --set mariadb.cluster.topology=masterslave --set mariadb.server.backup.nfs.server=<NFS_SERVER_IP>
   ```
 
 - without NFS connection (the build in backup functionality can't be used)
 
   ```sh
-  helm install . --name <id> --set mariadb.cluster.topology=masterslave
+  helm install . --name <release-name> --set mariadb.cluster.topology=masterslave
   ```
 
 Possible values are `masterslave`, `standalone` and `galera`. Default is `masterslave`.  
@@ -248,7 +248,9 @@ Refer to https://kubernetes.io/docs/concepts/configuration/manage-compute-resour
 
 ## Using the cluster
 
-To access the MaxScale node locally, find the ip address of the service:
+To access the MaxScale node locally, follow the below steps:
+
+1)find the ip address of the service:
 
 ```sh
 kubectl get services
@@ -259,24 +261,29 @@ The output will look something like:
 ```sh
 NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
 kubernetes      ClusterIP   10.152.183.1     <none>        443/TCP             40m
-msl-mariadb     ClusterIP   10.152.183.135   <none>        4006/TCP,4008/TCP   28m
-msl-mdb-clust   ClusterIP   None             <none>        3306/TCP            28m
-msl-mdb-state   ClusterIP   10.152.183.129   <none>        80/TCP              28m
+<release-name>-mariadb     ClusterIP   10.152.183.135   <none>        4006/TCP,4008/TCP   28m
+<release-name>-mdb-clust   ClusterIP   None             <none>        3306/TCP            28m
+<release-name>-mdb-state   ClusterIP   10.152.183.129   <none>        80/TCP              28m
 ```
 
-Use the `CLUSTER-IP` for `<release>-mariadb` as the host to connect to. The following ports are mapped to the local host:
+Use the `ClusterIP` for `<release-name>-mariadb` as the host to connect to. The following ports are mapped to the local host in Master/Slave and Galera topologies:
 
 - 4006: MaxScale ReadWrite Listener
 - 4008: MaxScale ReadOnly Listener
 
-After this (the user and password comes from the helm chart values.yaml):
+and for standalone topologies:
+
+- 3306: MariaDB Server
+
+2) get mysql shell connected to the cluster 
+(the user and password comes from the helm chart `values.yaml`):
 
 ```sh
-mysql -urepl -p5LVTpbGE2cGFtw69 -P4006 -h <cluster-ip>
-mysql -urepl -p5LVTpbGE2cGFtw69 -P4008 -h <cluster-ip>
+kubectl exec -it <release-name>-mdb-ms-0 -- mysql -uadmin -p5LVTpbGE2cGFtw69 -P4006 -h <ClusterIP>
+kubectl exec -it <release-name>-mdb-ms-0 -- mysql -uadmin -p5LVTpbGE2cGFtw69 -P4008 -h <ClusterIP>
 ```
 
-Applications deployed in the same namespace in Kubernetes can also access the cluster using the hostname `<prefix>-mariadb`.
+Applications deployed in the same namespace in Kubernetes can also access the cluster using the hostname `<release-name>-mariadb`.
 
 ## Using the Backup/Restore functionality
 
@@ -319,5 +326,5 @@ You can use an existing backup and load it when starting a new cluster. Restorin
     ```
 3. The above as a single command:
     ```sh
-    helm install . --name <id> --set mariadb.server.backup.restoreFrom=<backup_path> --set mariadb.server.backup.nfs.server=<nfs_server_ip> --set mariadb.server.backup.nfs.path=<nfs_mount_point>
+    helm install . --name <release-name> --set mariadb.server.backup.restoreFrom=<backup_path> --set mariadb.server.backup.nfs.server=<nfs_server_ip> --set mariadb.server.backup.nfs.path=<nfs_mount_point>
     ```
