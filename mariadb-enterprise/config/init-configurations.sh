@@ -1,17 +1,17 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright (C) 2018, MariaDB Corporation
 #
 # This script customizes templates based on the parameters passed to a command-line tool
 # the path to the target directory needs to be passed as first argument
 
 function expand_templates() {
-    sed -e "s/<<MASTER_HOST>>/$MASTER_HOST/g" \
-        -e "s/<<ADMIN_USERNAME>>/$ADMIN_USER/g" \
-        -e "s/<<ADMIN_PASSWORD>>/$ADMIN_PWD/g" \
-        -e "s/<<REPLICATION_USERNAME>>/$REPL_USER/g" \
-        -e "s/<<REPLICATION_PASSWORD>>/$REPL_PWD/g" \
-        -e "s/<<RELEASE_NAME>>/$RELEASE_NAME/g" \
-        -e "s/<<CLUSTER_ID>>/$CLUSTER_ID/g" \
+    sed -e "s/<<MASTER_HOST>>/${MASTER_HOST}/g" \
+        -e "s/<<ADMIN_USERNAME>>/${ADMIN_USER}/g" \
+        -e "s/<<ADMIN_PASSWORD>>/${ADMIN_PWD}/g" \
+        -e "s/<<REPLICATION_USERNAME>>/${REPL_USER}/g" \
+        -e "s/<<REPLICATION_PASSWORD>>/${REPL_PWD}/g" \
+        -e "s/<<RELEASE_NAME>>/${RELEASE_NAME}/g" \
+        -e "s/<<CLUSTER_ID>>/${CLUSTER_ID}/g" \
         $1
 }
 

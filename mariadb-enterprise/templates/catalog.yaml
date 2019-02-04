@@ -4,6 +4,22 @@
 {{ tpl (.Files.Get "catalog/mariadb-secret.yaml") . }}
 ---
 {{ tpl (.Files.Get "catalog/standalone.yaml") . }}
+{{ else if eq .Values.mariadb.cluster.topology "columnstore" }}
+{{ tpl (.Files.Get "catalog/mariadb-config.yaml") . }}
+---
+{{ tpl (.Files.Get "catalog/mariadb-secret.yaml") . }}
+---
+{{- if .Values.mariadb.columnstore.stableIpServices -}}
+{{- tpl (.Files.Get "catalog/stable_ip_service_um.yaml") . -}}
+{{- tpl (.Files.Get "catalog/stable_ip_service_pm.yaml") . -}}
+{{- end -}}
+{{ if .Values.mariadb.columnstore.singlenodeCombined }}
+{{ tpl (.Files.Get "catalog/columnstore-single.yaml") . }}
+{{ else }}
+{{ tpl (.Files.Get "catalog/columnstore.yaml") . }}
+---
+{{ tpl (.Files.Get "catalog/state-store.yaml") . }}
+{{ end }}
 {{ else if eq .Values.mariadb.cluster.topology "masterslave" }}
 {{ tpl (.Files.Get "catalog/mariadb-config.yaml") . }}
 ---
