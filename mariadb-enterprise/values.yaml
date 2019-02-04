@@ -34,9 +34,13 @@ mariadb:
         cpu: null                                # e.g. "3000m"
         memory: null                             # e.g. "9G"
     backup:
+<<<<<<< HEAD
       nfs:
         server: null                             # NFS server hostname or ip
         path: /                                  # NFS path to mount
+=======
+      claimName: null                            # shared volume mount definition
+>>>>>>> 3b3b96c9a37e3453ebbd487c85bc96b7f0096256
       restoreFrom: null                          # name of restore subdirectory
 
 # maxscale parameters
