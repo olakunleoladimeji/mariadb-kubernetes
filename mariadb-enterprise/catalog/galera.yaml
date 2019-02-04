@@ -1,9 +1,9 @@
 # Copyright (C) 2018, MariaDB Corporation
 #
-# Defines a master/slave configuration in a StatefulSet behind
+# Defines a galera configuration in a StatefulSet behind
 # a headless service. Allows scaling the number of server instances
 # by using:
-# kubectl scale sts <label>-mdb-ms --replicas=<number of server instances>
+# kubectl scale sts <label>-mdb-galera --replicas=<number of server instances>
 
 # Headless service for stable DNS entries for StatefulSet members
 apiVersion: v1
@@ -30,11 +30,11 @@ spec:
   selector:
     server.mariadb: {{ .Release.Name }}
 ---
-# a StatefulSet for the master/slave cluster
+# a StatefulSet for the galera cluster
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Release.Name }}-mdb-ms
+  name: {{ .Release.Name }}-mdb-galera
   labels:
     mariadb: {{ .Release.Name }}
     server.mariadb: {{ .Release.Name }}
@@ -72,11 +72,11 @@ spec:
         {{- end }}
     spec:
       initContainers:
-      # runs a state store client to determine the IP of the active master
-      - name: init-get-master
+      # runs a state store client to determine the IP of the active galera
+      - name: init-get-galera
         image: {{ .Values.mariadb.statestore.image }}
         command: ["/bin/sh"]
-        args: ["-c", "cd /root; node ./client.js mariadb-init {{ .Release.Name }}-mdb-state /mnt/config-map"]
+        args: ["-c", "cd /root; node ./client.js galera-init {{ .Release.Name }}-mdb-state /mnt/config-map"]
         imagePullPolicy: IfNotPresent
         volumeMounts:
           - name: mariadb-config-vol
@@ -85,17 +85,21 @@ spec:
             mountPath: /mnt/config-template
 
       # runs an initialization script to prepare the correct startup configuration
-      - name: init-masterslave
+      - name: init-galera
         image: {{ .Values.mariadb.server.image }}
         command:
           - bash
           - /mnt/config-template/init-configurations.sh
-          - masterslave
+          - galera
         env:
         - name: RESTORE_FROM_FOLDER
           value: {{ .Values.mariadb.server.backup.restoreFrom }}
         - name: CLUSTER_TOPOLOGY
           value: {{ .Values.mariadb.cluster.topology }}
+        - name: RELEASE_NAME
+          value: {{ .Release.Name }}
+        - name: CLUSTER_ID
+          value: "{{ .Values.mariadb.cluster.id }}"
         volumeMounts:
           - name: mariadb-secrets-vol
             mountPath: /mnt/secrets
@@ -175,7 +179,7 @@ spec:
       - name: state
         image: {{ .Values.mariadb.statestore.image }}
         command: ["/bin/sh"]
-        args: ["-c", "cd /root; node ./client.js mariadb {{ .Release.Name }}-mdb-state /mnt/config-map"]
+        args: ["-c", "cd /root; node ./client.js galera {{ .Release.Name }}-mdb-state /mnt/config-map"]
         imagePullPolicy: IfNotPresent
         volumeMounts:
           - name: mariadb-configtemplate-vol

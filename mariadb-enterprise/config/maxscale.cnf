@@ -55,7 +55,10 @@ type=service
 router=readwritesplit
 user=<<REPLICATION_USERNAME>>
 passwd=<<REPLICATION_PASSWORD>>
-master_failure_mode=error_on_write
+# force client to be disconnected while in read-only mode
+master_failure_mode=fail_on_write
+# use master for reads, assuming a high volume read
+master_accept_reads=true
 
 [MaxInfo]
 type=service

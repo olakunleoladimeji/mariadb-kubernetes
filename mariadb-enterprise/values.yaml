@@ -1,12 +1,58 @@
-ID: 0
-ADMIN_USERNAME: admin
-ADMIN_PASSWORD: 5LVTpbGE2cGFtw69
-REPLICATION_USERNAME: repl
-REPLICATION_PASSWORD: 5LVTpbGE2cGFtw69
-VOLUME_SIZE: 256Mi
-INITIAL_COUNT_MAXSCALE: 2
-INITIAL_COUNT_SERVER: 3
-MARIADB_SERVER_IMAGE: mariadb/server:10.3
-MARIADB_MAXSCALE_IMAGE: mariadb/maxscale:2.2
-MARIADB_STATESTORE_IMAGE: mariadb/statestore:0.0.2
-TEMPLATE: masterslave
+mariadb:
+  # general cluster parameters
+  cluster:
+    id: null                                     # e.g. "1"
+    topology: masterslave                        # possible values "masterslave", "standalone", "galera"
+    labels: null                                 # custom labels to be added to the mariadb service, e.g. for discovery   
+    annotations: null                            # custom annotations to be added to each pod in the cluster
+
+  # server parameters
+  server:
+    users:
+      admin:
+        username: admin
+        password: 5LVTpbGE2cGFtw69
+      replication:
+        username: repl
+        password: 5LVTpbGE2cGFtw69
+    storage:
+      class: null                                # e.g. high
+      size: 256Mi
+    replicas: 3
+    image: mariadb/server:10.3
+    port: 3306
+    labels: null                                 # custom labels applied to mariadb server pods only
+    annotations: null                            # custom annotations applied to mariadb server pods only
+    resources:
+      requests:
+        cpu: null                                # e.g. "1000m"
+        memory: null                             # e.g. "3G"
+      limits:
+        cpu: null                                # e.g. "3000m"
+        memory: null                             # e.g. "9G"
+    backup:
+      nfs:
+        server: null                             # NFS server hostname or ip
+        path: /                                  # NFS path to mount
+      restoreFrom: null                          # name of restore subdirectory
+
+# maxscale parameters
+  maxscale:
+    image: mariadb/maxscale:2.2
+    labels: null                                 # custom labels applied to maxscale pods only
+    annotations: null                            # custom annotations applied to maxscale pods only
+    ports:
+      readonly: 4008
+      readwrite: 4006
+    replicas: 2
+    resources:
+      requests:
+        cpu: null     # e.g. "1000m"
+        memory: null  # e.g. "3G"
+      limits:
+        cpu: null     # e.g. "3000m"
+        memory: null  # e.g. "9G"
+
+# statestore parameters
+  statestore:
+    image: mariadb/statestore:0.0.3

@@ -1,10 +1,10 @@
 # Copyright (C) 2018, MariaDB Corporation
 #
 # Defines a HA maxscale cluster as a deployment fronted
-# by a load-balancer service that is also the client endpoint. 
+# by a load-balancer service that is also the client endpoint.
 # Only one MaxScale instance will be active at a time.
 # Allows scaling the number of MaxScale instances by running:
-# kubectl scale deployment <lavel>-mdb-mxs --replicas=<number of instances> 
+# kubectl scale deployment <lavel>-mdb-mxs --replicas=<number of instances>
 
 apiVersion: v1
 kind: Service
@@ -12,16 +12,18 @@ metadata:
   name: {{ .Release.Name }}-mariadb
   labels:
     mariadb: {{ .Release.Name }}
-    id.mariadb: "{{ .Values.ID }}"
     entrypoint.mariadb: {{ .Release.Name }}
+    {{- if .Values.mariadb.cluster.id }}
+    id.mariadb: "{{ .Values.mariadb.cluster.id }}"
+    {{- end }}
 spec:
   ports:
   - name: maxscale-readwrite
-    port: 4006
-    targetPort: 4006
+    port: {{ .Values.mariadb.maxscale.ports.readwrite }}
+    targetPort: {{ .Values.mariadb.maxscale.ports.readwrite }}
   - name: maxscale-readonly
-    port: 4008
-    targetPort: 4008
+    port: {{ .Values.mariadb.maxscale.ports.readonly }}
+    targetPort: {{ .Values.mariadb.maxscale.ports.readonly }}
   selector:
     maxscale.mariadb: {{ .Release.Name }}
 ---
@@ -31,60 +33,101 @@ metadata:
   name: {{ .Release.Name }}-mdb-mxs
   labels:
     mariadb: {{ .Release.Name }}
-    id.mariadb: "{{ .Values.ID }}"
     maxscale.mariadb: {{ .Release.Name }}
+    {{- if .Values.mariadb.cluster.id }}
+    id.mariadb: "{{ .Values.mariadb.cluster.id }}"
+    {{- end }}
+    {{- if .Values.mariadb.cluster.labels }}
+{{ toYaml .Values.mariadb.cluster.labels | indent 4 }}
+    {{- end }}
+    {{- if .Values.mariadb.server.labels }}
+{{ toYaml .Values.mariadb.server.labels | indent 4 }}
+    {{- end }}
 spec:
   selector:
     matchLabels:
-      mariadb: {{ .Release.Name }}
       maxscale.mariadb: {{ .Release.Name }}
-  replicas: {{ .Values.INITIAL_COUNT_MAXSCALE }}
+  replicas: {{ .Values.mariadb.maxscale.replicas }}
   template:
     metadata:
       labels:
         mariadb: {{ .Release.Name }}
         maxscale.mariadb: {{ .Release.Name }}
+      {{- if or (.Values.mariadb.cluster.annotations) (.Values.mariadb.maxscale.annotations) }}
+      annotations:
+      {{- end }}
+      {{- if .Values.mariadb.cluster.annotations }}
+{{ toYaml .Values.mariadb.cluster.annotations | indent 8 }}
+      {{- end }}
+      {{- if .Values.mariadb.maxscale.annotations }}
+{{ toYaml .Values.mariadb.maxscale.annotations | indent 8 }}
+      {{- end }}
     spec:
       initContainers:
       - name: init-maxscale
-        image: {{ .Values.MARIADB_SERVER_IMAGE }}
+        image: {{ .Values.mariadb.server.image }}
         command:
           - bash
           - /mnt/config-template/init-configurations.sh
           - maxscale
         volumeMounts:
-          - mountPath: /mnt/secrets
-            name: mariadb-secrets-vol
+          - name: mariadb-secrets-vol
+            mountPath: /mnt/secrets
             readOnly: true
-          - mountPath: /mnt/config-template
-            name: mariadb-configtemplate-vol
-          - mountPath: /etc/maxscale-cfg
-            name: mariadb-config-vol
-      containers:
-      - image: {{ .Values.MARIADB_STATESTORE_IMAGE }}
-        command: ["/bin/sh"]
-        args: ["-c", "cd /root; node ./client.js maxscale {{ .Release.Name }}-mdb-state"]
-        imagePullPolicy: IfNotPresent
-        name: state
-        volumeMounts:
           - name: mariadb-configtemplate-vol
             mountPath: /mnt/config-template
-      - args:
+          - name: mariadb-config-vol
+            mountPath: /etc/maxscale-cfg
+
+      containers:
+      - name: maxscale
+        image: {{ .Values.mariadb.maxscale.image }}
+        args:
         - maxscale
         - -d
         - -U
         - maxscale
         - --configdir=/etc/maxscale-cfg
-        image: {{ .Values.MARIADB_MAXSCALE_IMAGE }}
-        name: maxscale
+        - -lstdout
         ports:
-        - containerPort: 4006
-        - containerPort: 4008
-        resources: {}
+        - containerPort: {{ .Values.mariadb.maxscale.ports.readonly }}
+        - containerPort: {{ .Values.mariadb.maxscale.ports.readwrite }}
+        {{- if or (.Values.mariadb.maxscale.resources.limits.cpu) (.Values.mariadb.maxscale.resources.limits.memory) (.Values.mariadb.maxscale.resources.requests.cpu) (.Values.mariadb.maxscale.resources.requests.memory) }}
+        resources:
+        {{- end }}
+          {{- if or (.Values.mariadb.maxscale.resources.requests.cpu) (.Values.mariadb.maxscale.resources.requests.memory) }}
+          requests:
+          {{- end }}
+            {{- if .Values.mariadb.maxscale.resources.requests.cpu }}
+            cpu: {{ .Values.mariadb.maxscale.resources.requests.cpu }}
+            {{- end }}
+            {{- if .Values.mariadb.maxscale.resources.requests.memory }}
+            memory: {{ .Values.mariadb.maxscale.resources.requests.memory }}
+            {{- end }}
+          {{- if or (.Values.mariadb.maxscale.resources.limits.cpu) (.Values.mariadb.maxscale.resources.limits.memory) }}
+          limits:
+          {{- end }}
+            {{- if .Values.mariadb.maxscale.resources.limits.cpu }}
+            cpu: {{ .Values.mariadb.maxscale.resources.limits.cpu }}
+            {{- end }}
+            {{- if .Values.mariadb.maxscale.resources.limits.memory }}
+            memory: {{ .Values.mariadb.maxscale.resources.limits.memory }}
+            {{- end }}
         volumeMounts:
-        - mountPath: /etc/maxscale-cfg
-          name: mariadb-config-vol
+        - name: mariadb-config-vol
+          mountPath: /etc/maxscale-cfg
+
+      - name: state
+        image: {{ .Values.mariadb.statestore.image }}
+        command: ["/bin/sh"]
+        args: ["-c", "cd /root; node ./client.js maxscale {{ .Release.Name }}-mdb-state"]
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - name: mariadb-configtemplate-vol
+            mountPath: /mnt/config-template
+
       restartPolicy: Always
+
       volumes:
       - name: mariadb-config-vol
         emptyDir: {}

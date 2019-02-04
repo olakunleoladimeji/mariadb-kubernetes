@@ -1,12 +1,12 @@
 # Copyright (C) 2018, MariaDB Corporation
 #
-# Defines a state store server that maintains (through heartbeat calls 
+# Defines a state store server that maintains (through heartbeat calls
 # from each pod in a MariaDB cluster on a regular scheduled interval):
 #   * a list of MaxScale instances
 #   * a list of MariaDB server instances
 #   * a reference to a single active MaxScale instance
 #   * a reference to a single Master instance
-# 
+#
 # The number of replicas should be exactly 1.
 
 kind: Service
@@ -15,8 +15,10 @@ metadata:
   name: {{ .Release.Name }}-mdb-state
   labels:
     mariadb: {{ .Release.Name }}
-    id.mariadb: "{{ .Values.ID }}"
     state-store.mariadb: {{ .Release.Name }}
+    {{ if .Values.mariadb.cluster.id }}
+    id.mariadb: "{{ .Values.mariadb.cluster.id }}"
+    {{ end }}
 spec:
   selector:
     state-store.mariadb: {{ .Release.Name }}
@@ -30,13 +32,14 @@ metadata:
   name: {{ .Release.Name }}-mdb-state
   labels:
     mariadb: {{ .Release.Name }}
-    id.mariadb: "{{ .Values.ID }}"
     state-store.mariadb: {{ .Release.Name }}
+    {{ if .Values.mariadb.cluster.id }}
+    id.mariadb: "{{ .Values.mariadb.cluster.id }}"
+    {{ end }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      mariadb: {{ .Release.Name }}
       state-store.mariadb: {{ .Release.Name }}
   template:
     metadata:
@@ -45,18 +48,20 @@ spec:
         state-store.mariadb: {{ .Release.Name }}
     spec:
       containers:
-      - image: {{ .Values.MARIADB_STATESTORE_IMAGE }}
+      - name: state-store
+        image: {{ .Values.mariadb.statestore.image }}
         command: ["/bin/sh"]
         args: ["-c", "cd /root; node ./server.js"]
         imagePullPolicy: IfNotPresent
-        name: state-store
         ports:
         - containerPort: 80
         volumeMounts:
           - name: mariadb-configtemplate-vol
             mountPath: /mnt/config-template
+
       volumes:
       - name: mariadb-configtemplate-vol
         configMap:
           name: {{ .Release.Name }}-mariadb-config
+
       restartPolicy: Always

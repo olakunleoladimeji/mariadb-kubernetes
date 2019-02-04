@@ -1,2 +1,3 @@
 masterslave=state-store.yaml maxscale.yaml masterslave.yaml
 standalone=standalone.yaml
+galera=state-store.yaml maxscale.yaml galera.yaml
