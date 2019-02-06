@@ -1,5 +1,4 @@
-
-# Copyright (C) 2018, MariaDB Corporation
+# Copyright (C) 2019, MariaDB Corporation
 #
 # Defines a columnstore configuration in a StatefulSet behind
 # a headless service. 
@@ -8,6 +7,33 @@
 # by using:
 # kubectl scale sts <label>-mdb-clust --replicas=<number of server instances>
 
+# external entrypoint
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-mariadb
+  labels:
+    mariadb: {{ .Release.Name }}
+    entrypoint.mariadb: {{ .Release.Name }}
+    {{- if .Values.mariadb.cluster.id }}
+    id.mariadb: "{{ .Values.mariadb.cluster.id }}"
+    {{- end }}
+    {{- if .Values.mariadb.cluster.labels }}
+{{ toYaml .Values.mariadb.cluster.labels | indent 4 }}
+    {{- end }}
+    {{- if .Values.mariadb.server.labels }}
+{{ toYaml .Values.mariadb.server.labels | indent 4 }}
+    {{- end }}
+spec:
+  ports:
+  - name: mariadb
+    port: {{ .Values.mariadb.server.port }}
+    targetPort: {{ .Values.mariadb.server.port }}
+  clusterIP: None
+  selector:
+    um.mariadb: {{ .Release.Name }}
+
+---
 # Headless service for stable DNS entries for StatefulSet members
 apiVersion: v1
 kind: Service
@@ -32,15 +58,17 @@ spec:
     targetPort: {{ .Values.mariadb.server.port }}
   clusterIP: None
   selector:
-    mariadb: {{ .Release.Name }}
+    csnode.mariadb: {{ .Release.Name }}
+
 ---
-# a StatefulSet for the columnstore cluster
+# a StatefulSet for the columnstore PMs
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ .Release.Name }}-mdb-cs-pm-module
   labels:
     mariadb: {{ .Release.Name }}
+    pm.mariadb: {{ .Release.Name }}
     {{- if .Values.mariadb.cluster.id }}
     id.mariadb: "{{ .Values.mariadb.cluster.id }}"
     {{- end }}
@@ -53,7 +81,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      mariadb: {{ .Release.Name }}
+      pm.mariadb: {{ .Release.Name }}
   serviceName: {{ .Release.Name }}-mdb-clust
   replicas: {{ .Values.mariadb.columnstore.pm.replicas }}
   template:
@@ -66,6 +94,8 @@ spec:
       {{- end }}
       labels:
         mariadb: {{ .Release.Name }}
+        pm.mariadb: {{ .Release.Name }}
+        csnode.mariadb: {{ .Release.Name }}
         {{- if .Values.mariadb.cluster.id }}
         id.mariadb: {{ .Values.mariadb.cluster.id }}
         {{- end }}
@@ -202,14 +232,14 @@ spec:
 
 ---
 
-# a StatefulSet for the columnstore UMs cluster
+# a StatefulSet for the columnstore UMs
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ .Release.Name }}-mdb-cs-um-module
   labels:
     mariadb: {{ .Release.Name }}
-    columnstore.um.mariadb: {{ .Release.Name }}
+    um.mariadb: {{ .Release.Name }}
     {{- if .Values.mariadb.cluster.id }}
     id.mariadb: "{{ .Values.mariadb.cluster.id }}"
     {{- end }}
@@ -222,8 +252,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      mariadb: {{ .Release.Name }}
-      columnstore.um.mariadb: {{ .Release.Name }}
+      um.mariadb: {{ .Release.Name }}
   serviceName: {{ .Release.Name }}-mdb-clust
   replicas: {{ .Values.mariadb.columnstore.um.replicas }}
   template:
@@ -236,7 +265,8 @@ spec:
       {{- end }}
       labels:
         mariadb: {{ .Release.Name }}
-        columnstore.um.mariadb: {{ .Release.Name }}
+        um.mariadb: {{ .Release.Name }}
+        csnode.mariadb: {{ .Release.Name }}
         {{- if .Values.mariadb.cluster.id }}
         id.mariadb: {{ .Values.mariadb.cluster.id }}
         {{- end }}
