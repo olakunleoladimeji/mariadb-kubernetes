@@ -3,10 +3,6 @@
 # Defines a columnstore configuration in a StatefulSet behind
 # a headless service. 
 
-# Allows scaling the number of server instances
-# by using:
-# kubectl scale sts <label>-mdb-clust --replicas=<number of server instances>
-
 # external entrypoint
 apiVersion: v1
 kind: Service
