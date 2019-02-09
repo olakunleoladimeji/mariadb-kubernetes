@@ -95,9 +95,13 @@ if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
         export MARIADB_CS_MASTER="$(cat /mnt/config-map/master)"
     fi
 
-
-
     if [[ "$MARIADB_CS_NODE" == "UM" ]]; then
+	# initialize users on the first run of a UM
+        if [[ ! -d /usr/local/mariadb/columnstore/mysql/db/mysql ]]; then
+           # it's the first run, ensure maxscale user is initialized
+            expand_templates /mnt/config-template/users.sql >> /docker-entrypoint-initdb.d/01-init.sql 
+	fi
+
         if [[ "$CONT_INDEX" -eq 0 ]]; then
             #First PM
             if [ ! -z $MARIADB_CS_DEBUG ]; then
