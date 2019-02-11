@@ -1,9 +1,30 @@
 #!/bin/bash
 
-MARIADB_HOST="sa-test-mariadb"
-MARIADB_USER="admin"
-MARIADB_PASSWORD="5LVTpbGE2cGFtw69"
-MARIADB_PORT="3306"
+if [[ "${MARIADB_HOST}" == "" ]]; then
+	echo "MARIADB_HOST expected"
+	exit 1
+fi
+
+if [[ "${MARIADB_USER}" == "" ]]; then
+	echo "MARIADB_USER expected"
+	exit 1
+fi
+
+if [[ "${MARIADB_PASSWORD}" == "" ]]; then
+	echo "MARIADB_PASSWORD expected"
+	exit 1
+fi
+
+if mysql -h ${MARIADB_HOST} -P3306 -u ${MARIADB_USER} -p${MARIADB_PASSWORD} -e "SELECT 1" 2>&1 >/dev/null; then
+	MARIADB_PORT="3306"
+else
+	if mysql -h ${MARIADB_HOST} -P4006 -u ${MARIADB_USER} -p${MARIADB_PASSWORD} -e "SELECT 1" 2>&1 >/dev/null; then
+		MARIADB_PORT="4006"
+	else
+		echo "Cannot determine MariaDB Server port"
+		exit 1
+	fi
+fi
 MARIADB_CLIENT="mysql -h ${MARIADB_HOST} -P ${MARIADB_PORT} -u ${MARIADB_USER} -p${MARIADB_PASSWORD}"
 
 set -ex
