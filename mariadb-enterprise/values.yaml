@@ -88,6 +88,6 @@ mariadb:
       #     memory: null
       
     #The following parameters will be removed from the final setup
-    test: true
-    sandbox: true
+    test: false
+    sandbox: false
     retries: 60 # 60x5=300sec - up to 5min 

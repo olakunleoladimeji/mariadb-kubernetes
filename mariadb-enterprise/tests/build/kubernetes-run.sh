@@ -3,7 +3,13 @@
 img=$( echo "$2" | sed -e 's/\//\\\//g' - )
 
 # delete existing resource (if any)
-kubectl delete job $1-sanity 2> /dev/null
+if kubectl delete pod $1-sanity-test 2> /dev/null; then
+	while kubectl get pods $1-sanity-test >/dev/null 2>/dev/null; do
+		echo -e "."
+		sleep 1 
+	done
+	echo ""
+fi
 
 # create new resource
 set -e

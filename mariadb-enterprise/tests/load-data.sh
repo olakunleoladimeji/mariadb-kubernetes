@@ -42,12 +42,28 @@ gzip -d *.gz
 # create test database
 echo "DROP DATABASE IF EXISTS test; CREATE DATABASE test;" | ${MARIADB_CLIENT}
 
+${MARIADB_CLIENT} -e "show variables like 'version_comment'" | grep -q 'Columnstore'
+MARIADB_COLUMNSTORE=$?
+
 # create test tables
-sed -e "s/%DB%/test/g" 01_load_tx_init.sql | ${MARIADB_CLIENT}
+if [[ ${MARIADB_COLUMNSTORE} -eq 0 ]]; then
+	# for Columnstore
+	sed -e "s/%DB%/test/g" 01_load_ax_init.sql | ${MARIADB_CLIENT}
+else
+        # for Server
+        sed -e "s/%DB%/test/g" 01_load_tx_init.sql | ${MARIADB_CLIENT}
+fi
 
 # load data from CSV
 sed -e "s/%DB%/test/g" -e "s/%CSV%/$(pwd | sed -e 's/\//\\\//g')\\//g" 02_load_tx_ldi.sql | ${MARIADB_CLIENT}
 
 # finally, run the test cases
 cd /usr/share/mysql/mysql-test
-./mtr --extern host="${MARIADB_HOST}" --extern user="${MARIADB_USER}" --extern password="${MARIADB_PASSWORD}" --force --verbose --suite=bookstore --max-test-fail=0 --skip-test=short_sort_length
+
+if [[ ${MARIADB_COLUMNSTORE} -eq 0 ]]; then
+	SKIP_TESTS=""
+else
+	SKIP_TESTS="--skip-test=short_sort_length"
+fi
+
+./mtr --extern host="${MARIADB_HOST}" --extern user="${MARIADB_USER}" --extern password="${MARIADB_PASSWORD}" --force --verbose --suite=bookstore --max-test-fail=0 ${SKIP_TESTS}
