@@ -4,8 +4,7 @@ mariadb:
   # general cluster parameters
   cluster:
     id: null                                     # e.g. "1"
-    topology: masterslave                        # possible values "masterslave", "standalone", "galera" or "backup" 
-                                                 #or "columnstore"
+    topology: masterslave                        # possible values "masterslave", "standalone", "galera", "columnstore", "columnstore-standalone" 
     labels: null                                 # custom labels to be added to the mariadb service, e.g. for discovery   
     annotations: null                            # custom annotations to be added to each pod in the cluster
 
@@ -89,6 +88,6 @@ mariadb:
       #     memory: null
       
     #The following parameters will be removed from the final setup
-    test: true
-    sandbox: true
+    test: false
+    sandbox: false
     retries: 60 # 60x5=300sec - up to 5min 
