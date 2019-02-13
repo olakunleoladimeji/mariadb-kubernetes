@@ -21,7 +21,7 @@
 ---
 {{ tpl (.Files.Get "catalog/mariadb-secret.yaml") . }}
 ---
-{{ tpl (.Files.Get "catalog/columnstore-single.yaml") . }}
+{{ tpl (.Files.Get "catalog/columnstore-standalone.yaml") . }}
 {{ else if eq .Values.mariadb.cluster.topology "masterslave" }}
 {{ tpl (.Files.Get "catalog/mariadb-config.yaml") . }}
 ---
