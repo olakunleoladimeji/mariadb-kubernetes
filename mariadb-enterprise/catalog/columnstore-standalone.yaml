@@ -1,18 +1,14 @@
 
 # Copyright (C) 2018, MariaDB Corporation
 #
-# Defines a columnstore configuration in a StatefulSet behind
-# a headless service. 
+# Defines a columnstore configuration running on a single pod in a StatefulSet behind a headless service. 
 
-# Allows scaling the number of server instances
-# by using:
-# kubectl scale sts <label>-mdb-clust --replicas=<number of server instances>
 
-# Headless service for stable DNS entries for StatefulSet members
+# External service
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-mdb-clust
+  name: {{ .Release.Name }}-mariadb
   labels:
     mariadb: {{ .Release.Name }}
     entrypoint.mariadb: {{ .Release.Name }}
@@ -32,7 +28,7 @@ spec:
     targetPort: {{ .Values.mariadb.server.port }}
   clusterIP: None
   selector:
-    mariadb: {{ .Release.Name }}
+    um.mariadb: {{ .Release.Name }}
 ---
 # a StatefulSet for the master/slave cluster
 apiVersion: apps/v1
@@ -41,6 +37,8 @@ metadata:
   name: {{ .Release.Name }}-mdb-cs-single
   labels:
     mariadb: {{ .Release.Name }}
+    um.mariadb: {{ .Release.Name }}
+    pm.mariadb: {{ .Release.Name }}
     {{- if .Values.mariadb.cluster.id }}
     id.mariadb: "{{ .Values.mariadb.cluster.id }}"
     {{- end }}
@@ -53,8 +51,9 @@ metadata:
 spec:
   selector:
     matchLabels:
-      mariadb: {{ .Release.Name }}
-  serviceName: {{ .Release.Name }}-mdb-clust
+      um.mariadb: {{ .Release.Name }}
+      pm.mariadb: {{ .Release.Name }}
+  serviceName: {{ .Release.Name }}-mariadb
   replicas: 1
   template:
     metadata:
@@ -66,6 +65,8 @@ spec:
       {{- end }}
       labels:
         mariadb: {{ .Release.Name }}
+        um.mariadb: {{ .Release.Name }}
+        pm.mariadb: {{ .Release.Name }}
         {{- if .Values.mariadb.cluster.id }}
         id.mariadb: {{ .Values.mariadb.cluster.id }}
         {{- end }}

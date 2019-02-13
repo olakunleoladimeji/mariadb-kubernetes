@@ -77,6 +77,13 @@ if [[ ! -z $MARIADB_CS_DEBUG ]]; then
     echo "Columnstore Init"
     echo "-----------------"
 fi
+
+# initialize users on the first run of a UM
+if [[ ! -d /usr/local/mariadb/columnstore/mysql/db/mysql ]]; then
+    # it's the first run, ensure maxscale user is initialized
+    expand_templates /mnt/config-template/users.sql >> /docker-entrypoint-initdb.d/01-init.sql
+fi
+
 expand_templates /mnt/config-template/init_singlenode.sh >> /mnt/config-map/cs_init.sh
 {{- if .Values.mariadb.columnstore.test}}
 expand_templates /mnt/config-template/test_cs.sh >> /mnt/config-map/test_cs.sh
