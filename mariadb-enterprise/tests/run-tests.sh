@@ -15,19 +15,18 @@ if [[ "${MARIADB_PASSWORD}" == "" ]]; then
 	exit 1
 fi
 
-if mysql -h ${MARIADB_HOST} -P3306 -u ${MARIADB_USER} -p${MARIADB_PASSWORD} -e "SELECT 1" 2>&1 >/dev/null; then
-	MARIADB_PORT="3306"
+if mysql -h ${MARIADB_HOST} -P4006 -u ${MARIADB_USER} -p${MARIADB_PASSWORD} -e "SELECT 1" 2>&1 >/dev/null; then
+	MARIADB_PORT="4006"
 else
-	if mysql -h ${MARIADB_HOST} -P4006 -u ${MARIADB_USER} -p${MARIADB_PASSWORD} -e "SELECT 1" 2>&1 >/dev/null; then
-		MARIADB_PORT="4006"
+	if mysql -h ${MARIADB_HOST} -P3306 -u ${MARIADB_USER} -p${MARIADB_PASSWORD} -e "SELECT 1" 2>&1 >/dev/null; then
+		MARIADB_PORT="3306"
 	else
 		echo "Cannot determine MariaDB Server port"
 		exit 1
 	fi
 fi
 MARIADB_CLIENT="mysql -h ${MARIADB_HOST} -P ${MARIADB_PORT} -u ${MARIADB_USER} -p${MARIADB_PASSWORD}"
-
-set -ex
+set -e
 
 # temporary data store
 mkdir -p /tmp/bookstore
@@ -42,11 +41,15 @@ gzip -d *.gz
 # create test database
 echo "DROP DATABASE IF EXISTS test; CREATE DATABASE test;" | ${MARIADB_CLIENT}
 
-${MARIADB_CLIENT} -e "show variables like 'version_comment'" | grep -q 'Columnstore'
-MARIADB_COLUMNSTORE=$?
+if ${MARIADB_CLIENT} -e "show variables like 'version_comment'" | grep -q 'Columnstore'; then
+	MARIADB_COLUMNSTORE=1
+else
+	MARIADB_COLUMNSTORE=0
+fi
 
+set -ex
 # create test tables
-if [[ ${MARIADB_COLUMNSTORE} -eq 0 ]]; then
+if [[ ${MARIADB_COLUMNSTORE} -eq 1 ]]; then
 	# for Columnstore
 	sed -e "s/%DB%/test/g" 01_load_ax_init.sql | ${MARIADB_CLIENT}
 else
@@ -60,10 +63,10 @@ sed -e "s/%DB%/test/g" -e "s/%CSV%/$(pwd | sed -e 's/\//\\\//g')\\//g" 02_load_t
 # finally, run the test cases
 cd /usr/share/mysql/mysql-test
 
-if [[ ${MARIADB_COLUMNSTORE} -eq 0 ]]; then
+if [[ ${MARIADB_COLUMNSTORE} -eq 1 ]]; then
 	SKIP_TESTS=""
 else
 	SKIP_TESTS="--skip-test=short_sort_length"
 fi
 
-./mtr --extern host="${MARIADB_HOST}" --extern user="${MARIADB_USER}" --extern password="${MARIADB_PASSWORD}" --force --verbose --suite=bookstore --max-test-fail=0 ${SKIP_TESTS}
+./mtr --extern host="${MARIADB_HOST}" --extern user="${MARIADB_USER}" --extern password="${MARIADB_PASSWORD}" --extern port=${MARIADB_PORT} --force --verbose --suite=bookstore --max-test-fail=0 ${SKIP_TESTS}
