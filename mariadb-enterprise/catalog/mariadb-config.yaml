@@ -55,7 +55,7 @@ data:
 {{ tpl (.Files.Get "config/start-mariadb-instance-columnstore-mn.sh") . | indent 4 }}
 {{- end -}}
 {{- else }}
-{{ tpl (.Files.Get "config/init-start-mariadb-instance.sh") . | indent 4 }}
+{{ tpl (.Files.Get "config/start-mariadb-instance.sh") . | indent 4 }}
 {{- end }}
   users.sql: |
 {{ tpl (.Files.Get "config/users.sql") . | indent 4 }}
