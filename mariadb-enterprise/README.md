@@ -287,7 +287,7 @@ Applications deployed in the same namespace in Kubernetes can also access the cl
 
 ## Using the Backup/Restore functionality
 
-You can backup an already running cluster or initialize a new cluster with an existing backup
+You can backup an already running cluster or initialize a new cluster with an existing backup. Only the Master/Slave, Galera, and Standalone topologies are currently supported.
 
 ### Backup
 
@@ -328,3 +328,49 @@ You can use an existing backup and load it when starting a new cluster. Restorin
     ```sh
     helm install . --name <release-name> --set mariadb.server.backup.restoreFrom=<backup_path> --set mariadb.server.backup.nfs.server=<nfs_server_ip> --set mariadb.server.backup.nfs.path=<nfs_mount_point>
     ```
+
+## Running Sanity Test and Benchmark tests
+
+The `tests` folder contains support for running sanity-level deployment tests, based on the mysql-test framework (https://mariadb.com/kb/en/library/mysqltest/), and benchmarking, based on sysbench (), against an existing MariaDB cluster in Kubernetes. Tests can be run using the Unix `make` command.
+
+### Pre-requisites
+
+In order to be able to execute the `make` command for running a test or a benchmark, the following tools must be installed:
+
+* make
+* docker (v17+)
+* kubernetes client (v1.9+), configured to access the Kubernetes cluster where MariaDB will runs as cluster admin
+
+Note: before running `make` a MariaDB cluster must be created and in an operational state.
+
+### Running a Sanity Test
+
+The sanity test loads a simulated Bookstore database (refer to https://github.com/mariadb-corporation/mariadb-server-docker/blob/master/tx_sandbox/labs.md for details) and runs a number of pre-defined aggregation queries to verify that results are as expected. In order to run a sanity-level deployment test, execute the following command:
+
+```$ make test MARIADB_CLUSTER=<release-name>```
+
+This will build a docker image, push it into a remote repo and create a pod named `<release-name>-sanity-test` that will connect to an existing MariaDB cluster named `<release-name>` and will execute the test framwork. You can track the progress of the test run by running:
+
+```$ kubectl logs <release-name>-sanity-test -f``` 
+
+### Running a Benchmark
+
+The benchmark test runs a standard `sysbench` OLTP workload with 20 tables and 100,000 rows each that executes a mix of 90% reads (point, range, and aggregate SELECTs) to 10% writes (INSERTs, UPDATEs and DELETEs) in 16 concurrent threads. In order to run a benchmark, execute the following command:
+
+```$ make becnhmark MARIADB_CLUSTER=<release-name>```
+
+This will build a docker image, push it into a remote repo and create a pod named `<release-name>-sysbench-test` that will connect to an existing MariaDB cluster named `<release-name>` and will execute sysbench. You can track the progress by running:
+
+```$ kubectl logs <release-name>-sysbench-test -f```
+
+You can optionally specify the number of threads by adding `THREADS=<number of threads>` (by default `<number of threads>=16`) on the `make` command line.
+
+### Parameters
+
+The following parameters can be used to alter the behaviors of `make`, by adding them to the command line in format `<parameter>=<value>`:
+
+| Parameter                                  | Default                  | Description                                                                                                         |
+|--------------------------------------------|--------------------------|---------------------------------------------------------------------------------------------------------------------|
+| DOCKER_REPO                                | gcr.io/dbaas-development | The remote Docker repo from which your Kubernetes cluster will pull images.                                         |
+| MARIADB_CLUSTER                            | sa-test                  | The name of an existing MariaDB cluster on Kubernetes to be tested or benchmarked                                  |
+| THREADS                                    | 16                       | Number of concurrent connections that will be used while running the benchmark.                                    |
