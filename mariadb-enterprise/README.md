@@ -374,7 +374,7 @@ This will build a docker image, push it into the remote Docker repo and create a
 
 The benchmark test runs a standard `sysbench` OLTP workload with 20 tables and 100,000 rows each that executes a mix of 90% reads (point, range, and aggregate SELECTs) to 10% writes (INSERTs, UPDATEs and DELETEs) in 16 concurrent threads. In order to run a benchmark, execute the following command:
 
-```$ make becnhmark MARIADB_CLUSTER=<release-name>```
+```$ make benchmark MARIADB_CLUSTER=<release-name>```
 
 This will build a docker image, push it into a remote repo and create a pod named `<release-name>-sysbench-test` that will connect to an existing MariaDB cluster named `<release-name>` and will execute sysbench. You can track the progress by running:
 
