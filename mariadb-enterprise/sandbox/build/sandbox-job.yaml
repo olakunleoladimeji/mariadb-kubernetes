@@ -1,0 +1,93 @@
+# Source: mariadb-enterprise/templates/catalog.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: $(MARIADB_CLUSTER)-mdb-zeppelin
+  labels:
+    mariadb: $(MARIADB_CLUSTER)
+spec:
+  ports:
+  - name: zeppelin
+    port: 8080
+    targetPort: 8080
+  selector:
+    mariadb-zeppelin: $(MARIADB_CLUSTER)
+---
+# Source: mariadb-enterprise/templates/catalog.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: $(MARIADB_CLUSTER)-mdb-zepp
+  labels:
+    mariadb: $(MARIADB_CLUSTER)
+    mariadb-zeppelin: $(MARIADB_CLUSTER)
+spec:
+  selector:
+    matchLabels:
+      mariadb: $(MARIADB_CLUSTER)
+  serviceName: $(MARIADB_CLUSTER)-mdb-zeppelin
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        mariadb: $(MARIADB_CLUSTER)
+        mariadb-zeppelin: $(MARIADB_CLUSTER)
+    spec:
+      containers:
+      - image: $(IMAGE)
+        imagePullPolicy: Always
+        name: mdb-zeppelin
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: $(RAM)
+        env:
+        - name: MARIADB_DATABASE_SERVICE
+          value: "$(DATABASE_SERVICE)"
+        - name: MARIADB_DATABASE_UM_POD
+          value: ""
+        - name: ZEPPELIN_WEB_HOST
+          value: "localhost"
+        - name: ZEPPELIN_WEB_PORT
+          value: "8080"
+        - name: ZEPPELIN_WEB_DEMO_USER
+          value: "demo"
+        - name: ZEPPELIN_WEB_DEMO_PASS
+          value: "highlyillogical"
+        - name: ZEPPELIN_WEB_ADMIN_USER
+          value: "buff"
+        - name: ZEPPELIN_WEB_ADMIN_PASS
+          value: "lesshighlyillogical"
+        volumeMounts:
+        - name: mariadb-entrypoint-vol
+          mountPath: /docker-entrypoint-initdb.d
+        - name: mariadb-config-vol
+          mountPath: /mnt/config-map
+        - name: notebook
+          mountPath: /zeppelin/notebook
+        resources:
+          requests:
+            memory: $(RAM)        
+      volumes:
+        - name: mariadb-entrypoint-vol
+          emptyDir: {}
+        - name: mariadb-config-vol
+          emptyDir: {}
+        - name: mariadb-configtemplate-vol
+          configMap:
+            name: $(MARIADB_CLUSTER)-mariadb-config
+        - name: mariadb-secrets-vol
+          secret:
+            secretName: $(MARIADB_CLUSTER)-mariadb-secret
+  volumeClaimTemplates:
+  - metadata:
+      name: notebook
+      labels: 
+        mariadb: $(MARIADB_CLUSTER)
+        mariadb-zeppelin: $(MARIADB_CLUSTER)
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi

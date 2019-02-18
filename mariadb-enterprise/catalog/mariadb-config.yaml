@@ -44,6 +44,8 @@ data:
 {{- if .Values.mariadb.columnstore.sandbox}}
   02_load_bookstore_data.sh: |
 {{ tpl (.Files.Get "config/columnstore/multi_node_um1/02_load_bookstore_data.sh") . | indent 4 }}
+  03_create_zeppelin_user.sql: |
+{{ tpl (.Files.Get "config/columnstore/multi_node_um1/03_create_zeppelin_user.sql") . | indent 4 }}
 {{- end }}
   start-mariadb-instance.sh: |
 {{- if (eq .Values.mariadb.cluster.topology "columnstore-standalone") }}

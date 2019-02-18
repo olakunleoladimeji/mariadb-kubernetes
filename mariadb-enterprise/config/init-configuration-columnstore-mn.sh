@@ -115,6 +115,7 @@ if [[ "$CLUSTER_TOPOLOGY" == "columnstore" ]]; then
 {{- end }}
 {{- if .Values.mariadb.columnstore.sandbox}}
             cp /mnt/config-template/02_load_bookstore_data.sh /docker-entrypoint-initdb.d/02_load_bookstore_data.sh
+            cp /mnt/config-template/03_create_zeppelin_user.sql /docker-entrypoint-initdb.d/03_create_zeppelin_user.sql
 {{- end }}
             #expand_templates /mnt/config-template/custom.sh >> /docker-entrypoint-initdb.d/custom.sh
         else

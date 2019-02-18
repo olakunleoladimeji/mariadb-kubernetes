@@ -28,6 +28,7 @@ if [ ! -z $MARIADB_CS_DEBUG ]; then
 fi
 
 cp /mnt/config-map/02_load_bookstore_data.sh /docker-entrypoint-initdb.d/01_load_bookstore_data.sh
+cp /mnt/config-map/03_create_zeppelin_user.sql /docker-entrypoint-initdb.d/03_create_zeppelin_user.sql
 
 bash /mnt/config-map/cs_init.sh &
 exec /usr/sbin/runsvdir-start

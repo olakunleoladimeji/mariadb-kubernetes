@@ -91,4 +91,5 @@ expand_templates /mnt/config-template/initdb.sql >> /mnt/config-map/initdb.sql
 {{- end }}
 {{- if .Values.mariadb.columnstore.sandbox}}
 expand_templates /mnt/config-template/02_load_bookstore_data.sh >> /mnt/config-map/02_load_bookstore_data.sh
+expand_templates /mnt/config-template/03_create_zeppelin_user.sql >> /mnt/config-map/03_create_zeppelin_user.sql
 {{- end }}
