@@ -208,7 +208,7 @@ The following list of parameters can be used with the helm chart by either modif
 |--------------------------------------------|--------------------------|---------------------------------------------------------------------------------------------------------------------|
 | _Global for the cluster_                                                                                                                                                                    |
 | mariadb.cluster.id                         | null                     | A generated unique ID of the cluster (used as a label on all artefacts) for discovery in multi-tenant environments. |
-| Mariadb.cluster.topology                   | masterslave              | The type of cluster to create, one of: masterslave, galera, standalone                                       |
+| Mariadb.cluster.topology                   | masterslave              | The type of cluster to create, one of: masterslave, galera, standalone, columnstore, columnstore-standalone  |
 | mariadb.cluster.labels                     | null                     | An associative array of custom labels in format name:value added to the cluster endpoint                            |
 | mariadb.cluster.annotations                | null                     | An associative array of custom annotations added to each pod in the topology                                        |
 | _Server instances_                         |                          |                                                                                                                     |
@@ -246,6 +246,16 @@ The following list of parameters can be used with the helm chart by either modif
 
 Refer to https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container for the definition of resource requests and limits.
 
+## Supported topologies
+
+The following topologies are currently supported:
+
+* Standalone: a single MariaDB Server instance;
+* Master/Slave: 1 master MariaDB Server instance replicated to 2 slave MariaDB instances, fronted by 2 MaxScale instances in a load-balanced configuration. MaxScale provides automated failover for the master. The number of running MariaDB Server instances can be managed at runtime;
+* Galera: 3 MariaDB instances in a Master/Master replication configuration (Galera cluster), fronted by 2 MaxScale instances in a load-balanced configuration. The number of running MariaDB Server instances can be managed at runtime;
+* Columnstore-Standalone: a single MariaDB ColumnStore instance with 1 UM and 1 PM running on the same pod;
+* Columnstore: MariaDB ColumnStore with 1 UM and 3 PMs running on separate pods.
+
 ## Using the cluster
 
 To access the MaxScale node locally, follow the below steps:
@@ -266,12 +276,12 @@ kubernetes      ClusterIP   10.152.183.1     <none>        443/TCP             4
 <release-name>-mdb-state   ClusterIP   10.152.183.129   <none>        80/TCP              28m
 ```
 
-Use the `ClusterIP` for `<release-name>-mariadb` as the host to connect to. The following ports are mapped to the local host in Master/Slave and Galera topologies:
+Use the `ClusterIP` for `<release-name>-mariadb` as the host to connect to. The following ports are mapped to the local host in `Master/Slave` and `Galera` topologies:
 
 - 4006: MaxScale ReadWrite Listener
 - 4008: MaxScale ReadOnly Listener
 
-and for standalone topologies:
+and for `Standalone`, `Columnstore` and `Columnstore-standalone` topologies:
 
 - 3306: MariaDB Server
 
@@ -283,7 +293,7 @@ kubectl exec -it <release-name>-mdb-ms-0 -- mysql -uadmin -p5LVTpbGE2cGFtw69 -P4
 kubectl exec -it <release-name>-mdb-ms-0 -- mysql -uadmin -p5LVTpbGE2cGFtw69 -P4008 -h <ClusterIP>
 ```
 
-Applications deployed in the same namespace in Kubernetes can also access the cluster using the hostname `<release-name>-mariadb`.
+Applications deployed in the same namespace in Kubernetes can also access the cluster using the hostname `<release-name>-mariadb`. This is the only connectivity option available for a headless service.
 
 ## Using the Backup/Restore functionality
 
@@ -331,7 +341,7 @@ You can use an existing backup and load it when starting a new cluster. Restorin
 
 ## Running Sanity Test and Benchmark tests
 
-The `tests` folder contains support for running sanity-level deployment tests, based on the mysql-test framework (https://mariadb.com/kb/en/library/mysqltest/), and benchmarking, based on sysbench (), against an existing MariaDB cluster in Kubernetes. Tests can be run using the Unix `make` command.
+The `tests` folder contains support for running sanity-level deployment tests, based on the mysql-test framework (https://mariadb.com/kb/en/library/mysqltest/), and benchmarking, based on sysbench (https://github.com/akopytov/sysbench/tree/1.0), against an existing MariaDB cluster in Kubernetes. Tests can be run using the Unix `make` command.
 
 ### Pre-requisites
 
@@ -341,7 +351,7 @@ In order to be able to execute the `make` command for running a test or a benchm
 * docker (v17+)
 * kubernetes client (v1.9+), configured to access the Kubernetes cluster where MariaDB will runs as cluster admin
 
-Note: before running `make` a MariaDB cluster must be created and in an operational state.
+Note: before running `make`, ensure that a MariaDB cluster must be created and is in an operational state.
 
 ### Running a Sanity Test
 
@@ -349,7 +359,7 @@ The sanity test loads a simulated Bookstore database (refer to https://github.co
 
 ```$ make test MARIADB_CLUSTER=<release-name>```
 
-This will build a docker image, push it into a remote repo and create a pod named `<release-name>-sanity-test` that will connect to an existing MariaDB cluster named `<release-name>` and will execute the test framwork. You can track the progress of the test run by running:
+This will build a docker image, push it into the remote Docker repo and create a pod named `<release-name>-sanity-test` that will connect to an existing MariaDB cluster named `<release-name>` and will execute the test framwork. You can track the progress of the test run by running:
 
 ```$ kubectl logs <release-name>-sanity-test -f``` 
 
@@ -363,11 +373,11 @@ This will build a docker image, push it into a remote repo and create a pod name
 
 ```$ kubectl logs <release-name>-sysbench-test -f```
 
-You can optionally specify the number of threads by adding `THREADS=<number of threads>` (by default `<number of threads>=16`) on the `make` command line.
+You can optionally specify the number of threads by adding `THREADS=<number of threads>` (by default `<number of threads>`=16) on the `make` command line.
 
 ### Parameters
 
-The following parameters can be used to alter the behaviors of `make`, by adding them to the command line in format `<parameter>=<value>`:
+The following parameters can be used to alter the behaviors of `make`, by adding them to the command line in the format `<parameter>=<value>`:
 
 | Parameter                                  | Default                  | Description                                                                                                         |
 |--------------------------------------------|--------------------------|---------------------------------------------------------------------------------------------------------------------|
