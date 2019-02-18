@@ -243,6 +243,12 @@ The following list of parameters can be used with the helm chart by either modif
 | mariadb.maxscale.resources.limits.memory   | null                     | The maximum share of memory for each MaxScale pod                                                                   |
 | *StateStore instances*                     |                          |                                                                                                                     |
 | mariadb.statestore.image                   | mariadb/statestore:0.0.3 | Name of Docker image for MariaDB StateStore                                                                         |
+| *Columnstore instances*                    |                          |                                                                                                                     |
+| mariadb.columnstore.image                  | nastybuff/cs:1.2.3       | Name of Docker image for MariaDB Columnstore                                                                         |
+| mariadb.columnstore.numBlocksPct           | 1024М                    | Amount of physical memory to utilize for disk block caching                                                   |
+| mariadb.columnstore.totalUmMemory          | 1G                       | Amount of physical memory to utilize for joins, intermediate results and set operations on the UM         |
+| mariadb.columnstore.um.replicas            | 1                        | Number of Columnstore UM instances in columnstore topology                                                  |
+| mariadb.columnstore.pm.replicas            | 3                        | Number of Columnstore PM instances in columnstore topology                                                  |
 
 Refer to https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container for the definition of resource requests and limits.
 
@@ -352,6 +358,7 @@ In order to be able to execute the `make` command for running a test or a benchm
 * kubernetes client (v1.9+), configured to access the Kubernetes cluster where MariaDB will runs as cluster admin
 
 Note: before running `make`, ensure that a MariaDB cluster must be created and is in an operational state.
+Note: Sanity tests and benchmarks should only be run against clusters that have at least 5GB of storage available (option `--set mariadb.server.storage.size=5Gi` on the `helm install` command line).
 
 ### Running a Sanity Test
 
