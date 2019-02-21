@@ -3,7 +3,7 @@ DOCKER_REPO  = docker.io/nastybuff
 MARIADB_CLUSTER ?= zeppelin-sandbox
 THREADS ?= 16
 IMAGE_NAME := mariadb-zeppelin-sandbox
-VERSION := 0.0.4
+VERSION := 0.0.5
 IMAGE := $(DOCKER_REPO)/$(IMAGE_NAME)
 DATABASE_SERVICE ?= database_service
 .PHONY: help

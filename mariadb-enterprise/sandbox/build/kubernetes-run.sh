@@ -15,7 +15,7 @@ cleanupZeppelin
 if [[ "$3" == "sandbox" ]]; then
     POD_NAME="${RELEASE_NAME}-sandbox-zeppelin"
 	SERVICE_NAME="${RELEASE_NAME}-mdb-zeppelin"
-    DATABASE_SERVICE="${RELEASE_NAME}-mdb-cs-um-module-0.${RELEASE_NAME}-mdb-clust"
+    DATABASE_SERVICE="${RELEASE_NAME}-mdb-cs-um-module-0.${RELEASE_NAME}-mariadb"
     ZEPPELIN_CONTAINER_NAME="${RELEASE_NAME}-mdb-zepp-0"
 else
     echo "Invalid resource $3"

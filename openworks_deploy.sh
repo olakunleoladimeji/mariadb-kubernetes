@@ -2,6 +2,8 @@
 K8S_NAMESPACE=buff-dbaas
 MAIN_DIRECTORY=$(pwd)
 RELEASE_NAME=$1
+CLEANUP=$2
+CLEANUP=${CLEANUP:-boza}
 topology=columnstore
 CS_INIT_FLAG=/usr/local/mariadb/columnstore/etc/container-initialized
 cleanup(){
@@ -24,11 +26,11 @@ cleanupZeppelin(){
     kubectl delete pvc notebook-${RELEASE_NAME}-mdb-zepp-0 --grace-period=0
     kubectl delete svc zeppelin-sandbox
 }
-if [ $2 = 'cleanup' ]; then
+if [ $CLEANUP = 'cleanup' ]; then
+    cleanup
     deleteObjects
     cleanNamespace
     cleanupZeppelin
-    exit
 fi
 
 set -e
@@ -39,7 +41,7 @@ helm install ./mariadb-enterprise  \
 --set mariadb.columnstore.sandbox=true \
 --set mariadb.columnstore.test=true \
 --set mariadb.server.resources.requests.memory=2G \
---set mariadb.debug=false
+--set mariadb.debug=false \
 --namespace=${K8S_NAMESPACE} 
 
 echo "Waiting for ${RELEASE_NAME}-mdb-cs-um-module-0"
