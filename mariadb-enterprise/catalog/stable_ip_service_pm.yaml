@@ -1,9 +1,8 @@
-{{- $root := . -}}
-{{- range $pod_num, $e := until ( .Values.mariadb.columnstore.pm.replicas | int) -}}
+{{- range $pod_num := until ( .Values.mariadb.columnstore.pm.replicas | int ) }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $root.Release.Name }}-stableip-pm-{{ $pod_num}}
+  name: {{ $.Release.Name }}-stableip-pm-{{ $pod_num }}
 spec:
   ports:
     - port: 3306
@@ -19,6 +18,6 @@ spec:
     - port: 8700
       name: we
   selector:
-    statefulset.kubernetes.io/pod-name: {{ $root.Release.Name }}-mdb-cs-pm-module-{{$pod_num}}
+    statefulset.kubernetes.io/pod-name: {{ $.Release.Name }}-mdb-cs-pm-module-{{ $pod_num }}
 ---
-{{- end -}}
+{{- end }}
