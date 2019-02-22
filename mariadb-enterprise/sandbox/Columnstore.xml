@@ -7,7 +7,7 @@
 -->
 <Columnstore Version="V1.0.0">
 	<ExeMgr1>
-		<IPAddr>b-1-mdb-cs-um-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-um-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8601</Port>
 		<Module>um1</Module>
 	</ExeMgr1>
@@ -16,19 +16,19 @@
 		<Port>8602</Port>
 	</JobProc>
 	<ProcMgr>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8603</Port>
 	</ProcMgr>
 	<ProcMgr_Alarm>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8606</Port>
 	</ProcMgr_Alarm>
 	<ProcStatusControl>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8604</Port>
 	</ProcStatusControl>
 	<ProcStatusControlStandby>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8605</Port>
 	</ProcStatusControlStandby>
 	<!-- Disabled
@@ -47,11 +47,11 @@
 		<Port>8800</Port>
 	</dm1_ProcessMonitor>
 	<um1_ProcessMonitor>
-		<IPAddr>b-1-mdb-cs-um-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-um-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8800</Port>
 	</um1_ProcessMonitor>
 	<pm1_ProcessMonitor>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8800</Port>
 	</pm1_ProcessMonitor>
 	<dm1_ServerMonitor>
@@ -59,23 +59,23 @@
 		<Port>8622</Port>
 	</dm1_ServerMonitor>
 	<um1_ServerMonitor>
-		<IPAddr>b-1-mdb-cs-um-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-um-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8622</Port>
 	</um1_ServerMonitor>
 	<pm1_ServerMonitor>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8622</Port>
 	</pm1_ServerMonitor>
 	<pm1_WriteEngineServer>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8630</Port>
 	</pm1_WriteEngineServer>
 	<DDLProc>
-		<IPAddr>b-1-mdb-cs-um-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-um-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8612</Port>
 	</DDLProc>
 	<DMLProc>
-		<IPAddr>b-1-mdb-cs-um-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-um-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8614</Port>
 	</DMLProc>
 	<BatchInsert>
@@ -100,131 +100,131 @@
 		<DirectIO>y</DirectIO>
 	</PrimitiveServers>
 	<PMS1>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS1>
 	<PMS2>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS2>
 	<PMS3>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS3>
 	<PMS4>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS4>
 	<PMS5>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS5>
 	<PMS6>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS6>
 	<PMS7>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS7>
 	<PMS8>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS8>
 	<PMS9>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS9>
 	<PMS10>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS10>
 	<PMS11>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS11>
 	<PMS12>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS12>
 	<PMS13>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS13>
 	<PMS14>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS14>
 	<PMS15>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS15>
 	<PMS16>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS16>
 	<PMS17>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS17>
 	<PMS18>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS18>
 	<PMS19>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS19>
 	<PMS20>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS20>
 	<PMS21>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS21>
 	<PMS22>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS22>
 	<PMS23>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS23>
 	<PMS24>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS24>
 	<PMS25>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS25>
 	<PMS26>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS26>
 	<PMS27>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS27>
 	<PMS28>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS28>
 	<PMS29>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS29>
 	<PMS30>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS30>
 	<PMS31>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS31>
 	<PMS32>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8620</Port>
 	</PMS32>
 	<SystemConfig>
@@ -303,8 +303,8 @@
 		<ModuleDesc2>User Module</ModuleDesc2>
 		<RunType2>SIMPLEX</RunType2>
 		<ModuleCount2>1</ModuleCount2>
-		<ModuleIPAddr1-1-2>b-1-mdb-cs-um-module-0.b-1-mdb-clust</ModuleIPAddr1-1-2>
-		<ModuleHostName1-1-2>b-1-mdb-cs-um-module-0.b-1-mdb-clust</ModuleHostName1-1-2>
+		<ModuleIPAddr1-1-2>d-1-mdb-cs-um-module-0.d-1-mdb-clust</ModuleIPAddr1-1-2>
+		<ModuleHostName1-1-2>d-1-mdb-cs-um-module-0.d-1-mdb-clust</ModuleHostName1-1-2>
 		<ModuleDisableState1-2>ENABLED</ModuleDisableState1-2>
 		<ModuleCPUCriticalThreshold2>0</ModuleCPUCriticalThreshold2>
 		<ModuleCPUMajorThreshold2>0</ModuleCPUMajorThreshold2>
@@ -326,8 +326,8 @@
 		<ModuleDesc3>Performance Module</ModuleDesc3>
 		<RunType3>SIMPLEX</RunType3>
 		<ModuleCount3>3</ModuleCount3>
-		<ModuleIPAddr1-1-3>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</ModuleIPAddr1-1-3>
-		<ModuleHostName1-1-3>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</ModuleHostName1-1-3>
+		<ModuleIPAddr1-1-3>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</ModuleIPAddr1-1-3>
+		<ModuleHostName1-1-3>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</ModuleHostName1-1-3>
 		<ModuleDisableState1-3>ENABLED</ModuleDisableState1-3>
 		<ModuleCPUCriticalThreshold3>0</ModuleCPUCriticalThreshold3>
 		<ModuleCPUMajorThreshold3>0</ModuleCPUMajorThreshold3>
@@ -350,15 +350,15 @@
 		<ModuleHostName1-2-3>unassigned</ModuleHostName1-2-3>
 		<ModuleIPAddr1-2-3>0.0.0.0</ModuleIPAddr1-2-3>
 		<ModuleDisableState2-3>ENABLED</ModuleDisableState2-3>
-		<ModuleHostName2-1-3>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</ModuleHostName2-1-3>
-		<ModuleIPAddr2-1-3>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</ModuleIPAddr2-1-3>
+		<ModuleHostName2-1-3>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</ModuleHostName2-1-3>
+		<ModuleIPAddr2-1-3>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</ModuleIPAddr2-1-3>
 		<ModuleHostName2-2-3>unassigned</ModuleHostName2-2-3>
 		<ModuleIPAddr2-2-3>0.0.0.0</ModuleIPAddr2-2-3>
 		<ModuleDBRootID2-1-3>2</ModuleDBRootID2-1-3>
 		<ModuleDBRootCount2-3>1</ModuleDBRootCount2-3>
 		<ModuleDisableState3-3>ENABLED</ModuleDisableState3-3>
-		<ModuleHostName3-1-3>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</ModuleHostName3-1-3>
-		<ModuleIPAddr3-1-3>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</ModuleIPAddr3-1-3>
+		<ModuleHostName3-1-3>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</ModuleHostName3-1-3>
+		<ModuleIPAddr3-1-3>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</ModuleIPAddr3-1-3>
 		<ModuleHostName3-2-3>unassigned</ModuleHostName3-2-3>
 		<ModuleIPAddr3-2-3>0.0.0.0</ModuleIPAddr3-2-3>
 		<ModuleDBRootID3-1-3>3</ModuleDBRootID3-1-3>
@@ -393,27 +393,27 @@
 	</WriteEngine>
 	<DBRM_Controller>
 		<NumWorkers>4</NumWorkers>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8616</Port>
 	</DBRM_Controller>
 	<!-- Worker Port: 8700 - 8720 is reserved to support External Modules-->
 	<DBRM_Worker1>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8700</Port>
 		<Module>pm1</Module>
 	</DBRM_Worker1>
 	<DBRM_Worker2>
-		<IPAddr>b-1-mdb-cs-um-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-um-module-0.d-1-mdb-clust</IPAddr>
 		<Port>8700</Port>
 		<Module>um1</Module>
 	</DBRM_Worker2>
 	<DBRM_Worker3>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8700</Port>
 		<Module>pm2</Module>
 	</DBRM_Worker3>
 	<DBRM_Worker4>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8700</Port>
 		<Module>pm3</Module>
 	</DBRM_Worker4>
@@ -571,30 +571,30 @@
 		<Port>0</Port>
 	</QueryTele>
 	<ProcHeartbeatControl>
-		<IPAddr>b-1-mdb-cs-pm-module-0.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-0.d-1-mdb-clust</IPAddr>
 	</ProcHeartbeatControl>
 	<pm2_ProcessMonitor>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8800</Port>
 	</pm2_ProcessMonitor>
 	<pm2_ServerMonitor>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8622</Port>
 	</pm2_ServerMonitor>
 	<pm2_WriteEngineServer>
-		<IPAddr>b-1-mdb-cs-pm-module-1.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-1.d-1-mdb-clust</IPAddr>
 		<Port>8630</Port>
 	</pm2_WriteEngineServer>
 	<pm3_ProcessMonitor>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8800</Port>
 	</pm3_ProcessMonitor>
 	<pm3_ServerMonitor>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8622</Port>
 	</pm3_ServerMonitor>
 	<pm3_WriteEngineServer>
-		<IPAddr>b-1-mdb-cs-pm-module-2.b-1-mdb-clust</IPAddr>
+		<IPAddr>d-1-mdb-cs-pm-module-2.d-1-mdb-clust</IPAddr>
 		<Port>8630</Port>
 	</pm3_WriteEngineServer>
 </Columnstore>

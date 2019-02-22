@@ -15,7 +15,7 @@ cleanupZeppelin
 if [[ "$3" == "sandbox" ]]; then
     POD_NAME="${RELEASE_NAME}-sandbox-zeppelin"
 	SERVICE_NAME="${RELEASE_NAME}-mdb-zeppelin"
-    DATABASE_SERVICE="${RELEASE_NAME}-mdb-cs-um-module-0.${RELEASE_NAME}-mariadb"
+    DATABASE_SERVICE="${RELEASE_NAME}-mdb-cs-um-module-0.${RELEASE_NAME}-mdb-clust"
     ZEPPELIN_CONTAINER_NAME="${RELEASE_NAME}-mdb-zepp-0"
 else
     echo "Invalid resource $3"
@@ -53,7 +53,7 @@ if [[ "$3" == "sandbox" ]]; then
     sed -e "s/\$(MARIADB_CLUSTER)/${RELEASE_NAME}/g" \
         -e "s/\$(IMAGE)/${img}/g" \
         -e "s/\$(DATABASE_SERVICE)/$DATABASE_SERVICE/g" \
-        -e "s/\$(RAM)/4G/g" \
+        -e "s/\$(RAM)/${RAM}/g" \
         -i '' "$TEMPDIR/sandbox-job.yaml"
     cat "$TEMPDIR/sandbox-job.yaml" > build/last.yaml
     kubectl create -f "$TEMPDIR/sandbox-job.yaml"

@@ -6,6 +6,8 @@ IMAGE_NAME := mariadb-zeppelin-sandbox
 VERSION := 0.0.5
 IMAGE := $(DOCKER_REPO)/$(IMAGE_NAME)
 DATABASE_SERVICE ?= database_service
+ZEPP_RAM ?= 1G
+
 .PHONY: help
 
 help:
@@ -18,4 +20,4 @@ push-image: build-image
 	build/docker-push.sh "$(IMAGE)" "$(VERSION)"
 
 sandbox: push-image
-	build/kubernetes-run.sh "$(MARIADB_CLUSTER)" "$(IMAGE):$(VERSION)" sandbox 4G
+	build/kubernetes-run.sh "$(MARIADB_CLUSTER)" "$(IMAGE):$(VERSION)" sandbox $(ZEPP_RAM)
