@@ -4,6 +4,8 @@ RAM=$4
 RAM=${RAM:-2G}
 img=$( echo "$2" | sed 's/\//\\\//g' )
 RELEASE_NAME=$1
+SERVICE_TYPE=NodePort #LoadBalancer for GKE
+
 
 cleanupZeppelin(){
     kubectl delete statefulsets ${RELEASE_NAME}-mdb-zepp
@@ -54,10 +56,11 @@ if [[ "$3" == "sandbox" ]]; then
         -e "s/\$(IMAGE)/${img}/g" \
         -e "s/\$(DATABASE_SERVICE)/$DATABASE_SERVICE/g" \
         -e "s/\$(RAM)/${RAM}/g" \
-        -i '' "$TEMPDIR/sandbox-job.yaml"
+        -i.bak "$TEMPDIR/sandbox-job.yaml"
     cat "$TEMPDIR/sandbox-job.yaml" > build/last.yaml
     kubectl create -f "$TEMPDIR/sandbox-job.yaml"
-    kubectl expose service ${RELEASE_NAME}-mdb-zeppelin --type=LoadBalancer --name=zeppelin-sandbox
+    kubectl expose service ${RELEASE_NAME}-mdb-zeppelin --name=zeppelin-sandbox --type=${SERVICE_TYPE}
+    kubectl get svc
 else
     echo "Invalid resource $3"
     exit 1
