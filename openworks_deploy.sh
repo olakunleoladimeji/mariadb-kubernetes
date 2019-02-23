@@ -1,11 +1,16 @@
 #!/bin/bash
-K8S_NAMESPACE=buff-dbaas
+K8S_NAMESPACE=ow-sandbox
 MAIN_DIRECTORY=$(pwd)
 RELEASE_NAME=$1
 CLEANUP=$2
 CLEANUP=${CLEANUP:-boza}
 topology=columnstore
 CS_INIT_FLAG=/usr/local/mariadb/columnstore/etc/container-initialized
+
+if ! kubectl get namespace ${K8S_NAMESPACE} | grep ${K8S_NAMESPACE} > /dev/null 2>/dev/null; then
+    kubectl create -f ./openworks_namespace.json
+fi
+kubectl config set-context $(kubectl config current-context) --namespace=${K8S_NAMESPACE}
 
 cleanup(){
     echo "Cleanup ..."
@@ -34,6 +39,10 @@ cleanupZeppelin(){
     kubectl delete pvc notebook-${RELEASE_NAME}-mdb-zepp-0 --grace-period=0 --namespace=${K8S_NAMESPACE}
 }
 
+if helm ls ${RELEASE_NAME} | grep ${RELEASE_NAME} > /dev/null 2>/dev/null; then
+    helm del --purge ${RELEASE_NAME}
+fi
+
 if [ $CLEANUP = 'cleanup' ]; then
     cleanup
     cleanupZeppelin
@@ -42,6 +51,7 @@ if [ $CLEANUP = 'cleanup' ]; then
 fi
 if [ $CLEANUP = 'namespace' ]; then
     cleanNamespace
+    kubectl delete namespaces ${K8S_NAMESPACE}
 fi
 
 set -e
